@@ -1,0 +1,39 @@
+# Environment configuration and credentials
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_ed25519
+
+# Temporary output and local development artifacts
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node dependencies
+node_modules/
+
+# TSA-local development records
+/VSKILLS_TSA_STATE.md
+/VSKILLS_TSA_KNOWLEDGE.md
+
+# Unreviewed original source prompts and protocol package
+/video TSA skill/
+/video TSA skill.zip
+/sub skill.txt
+/TSA_Master agent CANONICAL_3D_CHARACTER_BUILD_PROMPT_v1.0.0.md
+/TSA_Mater web CANONICAL_3D_CHARACTER_CHAT_PROMPT_v1.0.1.md
