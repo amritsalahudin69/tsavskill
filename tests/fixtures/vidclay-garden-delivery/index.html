@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claymation Garden Delivery</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #364453;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #364453;
+    }
+
+    main {
+      width: min(96vw, 1080px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      border: 4px solid #252f39;
+      background: #b7d8d1;
+    }
+
+    #init-error {
+      margin: 0;
+      padding: 0.75rem;
+      color: #fff;
+      background: #8b2f36;
+    }
+
+    #init-error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" role="img"
+      aria-label="A clay character carries a clay flowerpot from a garden worktable to a wooden display shelf.">
+      WebGL is required to display this scene.
+    </canvas>
+    <p id="init-error" role="alert" hidden></p>
+  </main>
+  <script type="module">
+    "use strict";
+
+    (async function startScene() {
+      const canvas = document.getElementById("scene");
+      const errorPanel = document.getElementById("init-error");
+
+      try {
+        const THREE = await import(
+          "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"
+        );
+
+        const WIDTH = 960;
+        const HEIGHT = 600;
+        const DURATION = 9;
+        const STOP_MOTION_FPS = 12;
+        const TABLE_TOP_Y = 1.02;
+        const SHELF_CENTER_X = 2.2;
+        const CHARACTER_YAW = Math.PI / 2;
+        const CHARACTER_Z = 0.5;
+        const CARRY_X = 0.5;
+        const CARRY_Z = 0.65;
+        const TABLE_STATION_X = -2.75;
+        const FINAL_CHARACTER_X = SHELF_CENTER_X - CARRY_Z;
+        const PICKUP_TIME = 3.0;
+        const RELEASE_TIME = 7.0;
+        const PLANT_POT_HEIGHT = 0.42;
+        const ARM_UPPER_LENGTH = 0.46;
+        const ARM_FOREARM_LENGTH = 0.44;
+        const DOWN = new THREE.Vector3(0, -1, 0);
+
+        const COLORS = {
+          clayBlue: 0x5d8791,
+          clayCream: 0xe7c9a0,
+          clayGreen: 0x718c55,
+          clayHair: 0x49332b,
+          clayLeaf: 0x668d4f,
+          clayMouth: 0x57352f,
+          clayOrange: 0xc36d49,
+          clayPink: 0xd98976,
+          clayRed: 0x9f4e45,
+          claySoil: 0x674638,
+          clayWhite: 0xf2e5d3,
+          clayYellow: 0xe6b951,
+          eye: 0xf8f2e7,
+          pupil: 0x282932,
+          wood: 0x8c5a3d,
+          woodDark: 0x62402f,
+          woodLight: 0xb77b50
+        };
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb7d8d1);
+        scene.fog = new THREE.Fog(0xb7d8d1, 17, 34);
+
+        const camera = new THREE.PerspectiveCamera(38, WIDTH / HEIGHT, 0.1, 80);
+        camera.position.set(7.5, 5.2, 9.5);
+        camera.lookAt(-0.15, 1.0, 0);
+
+        const renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true,
+          alpha: false
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(WIDTH, HEIGHT, false);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+
+        const mat = (color, roughness = 0.68) => new THREE.MeshStandardMaterial({
+          color,
+          roughness,
+          metalness: 0
+        });
+        const clayMaterials = new Map();
+        function clay(color) {
+          if (!clayMaterials.has(color)) {
+            clayMaterials.set(color, new THREE.MeshStandardMaterial({
+              color,
+              roughness: 0.7,
+              metalness: 0,
+              emissive: color,
+              emissiveIntensity: 0.015
+            }));
+          }
+          return clayMaterials.get(color);
+        }
+
+        function mesh(parent, geometry, material, position = [0, 0, 0]) {
+          const item = new THREE.Mesh(geometry, material);
+          item.position.set(...position);
+          item.castShadow = true;
+          item.receiveShadow = true;
+          parent.add(item);
+          return item;
+        }
+
+        function sculptedSphere(parent, radius, material, position, seed = 1) {
+          const geometry = new THREE.SphereGeometry(radius, 24, 18);
+          const positions = geometry.attributes.position;
+          const point = new THREE.Vector3();
+          for (let index = 0; index < positions.count; index += 1) {
+            point.fromBufferAttribute(positions, index);
+            const variation = 1 + 0.012 * Math.sin(
+              point.x * 17 + point.y * 11 + point.z * 13 + seed
+            ) * Math.sin(point.y * 9 - point.z * 7 + seed * 0.7);
+            point.multiplyScalar(variation);
+            positions.setXYZ(index, point.x, point.y, point.z);
+          }
+          positions.needsUpdate = true;
+          geometry.computeVertexNormals();
+          geometry.computeBoundingSphere();
+          return mesh(parent, geometry, material, position);
+        }
+
+        function box(parent, size, position, material) {
+          return mesh(
+            parent,
+            new THREE.BoxGeometry(size[0], size[1], size[2]),
+            material,
+            position
+          );
+        }
+
+        function capsule(parent, radius, cylinderLength, position, material) {
+          return mesh(
+            parent,
+            new THREE.CapsuleGeometry(radius, cylinderLength, 5, 12),
+            material,
+            position
+          );
+        }
+
+        function addStem(parent, start, end, radius, material) {
+          const from = new THREE.Vector3(...start);
+          const to = new THREE.Vector3(...end);
+          const direction = to.clone().sub(from);
+          const stem = mesh(
+            parent,
+            new THREE.CylinderGeometry(radius * 0.78, radius, direction.length(), 8),
+            material,
+            from.clone().add(to).multiplyScalar(0.5).toArray()
+          );
+          stem.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            direction.normalize()
+          );
+          return stem;
+        }
+
+        const hemisphere = new THREE.HemisphereLight(0xffefd8, 0x64734e, 1.9);
+        scene.add(hemisphere);
+        const keyLight = new THREE.DirectionalLight(0xffdda9, 2.6);
+        keyLight.position.set(-4, 9, 7);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        keyLight.shadow.camera.left = -8;
+        keyLight.shadow.camera.right = 8;
+        keyLight.shadow.camera.top = 8;
+        keyLight.shadow.camera.bottom = -8;
+        scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight(0xd7eee2, 0.9);
+        fillLight.position.set(6, 4, -5);
+        scene.add(fillLight);
+
+        const ground = mesh(
+          scene,
+          new THREE.PlaneGeometry(30, 18),
+          mat(0x77936a, 0.92),
+          [0, -0.09, -0.3]
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+
+        const fence = new THREE.Group();
+        fence.position.set(0, 0, -2.45);
+        scene.add(fence);
+        for (let x = -4; x <= 4; x += 0.72) {
+          box(fence, [0.09, 1.18, 0.09], [x, 0.5, 0], mat(COLORS.wood));
+        }
+        for (const y of [0.34, 0.88]) {
+          box(fence, [8.2, 0.12, 0.12], [0, y, 0], mat(COLORS.woodLight));
+        }
+        for (const x of [-3.6, -0.1, 3.4]) {
+          sculptedSphere(scene, 0.48, clay(COLORS.clayGreen), [x, 0.27, -1.8], x);
+          sculptedSphere(scene, 0.34, clay(COLORS.clayLeaf), [x + 0.36, 0.23, -1.76], x + 2);
+        }
+
+        function createWorktable() {
+          const table = new THREE.Group();
+          table.position.set(-1.55, 0, 0);
+          scene.add(table);
+          const wood = mat(COLORS.wood);
+          const lightWood = mat(COLORS.woodLight);
+          const darkWood = mat(COLORS.woodDark);
+          for (const x of [-0.62, 0.62]) {
+            for (const z of [-0.34, 0.34]) {
+              box(table, [0.11, 0.94, 0.11], [x, 0.47, z], wood);
+            }
+          }
+          for (const z of [-0.23, 0.23]) {
+            box(table, [1.68, 0.12, 0.43], [0, 0.96, z], lightWood);
+          }
+          for (const x of [-0.61, 0.61]) {
+            box(table, [0.11, 0.78, 0.11], [x, 0.49, 0], darkWood);
+          }
+          return table;
+        }
+
+        function createShelf() {
+          const shelf = new THREE.Group();
+          shelf.position.set(SHELF_CENTER_X, 0, 0);
+          scene.add(shelf);
+          const wood = mat(COLORS.wood);
+          const lightWood = mat(COLORS.woodLight);
+          const darkWood = mat(COLORS.woodDark);
+          for (const x of [-0.58, 0.58]) {
+            box(shelf, [0.11, 1.48, 0.11], [x, 0.74, -0.13], wood);
+          }
+          box(shelf, [1.42, 0.12, 0.44], [0, 0.96, 0], lightWood);
+          box(shelf, [1.42, 0.10, 0.44], [0, 0.42, 0], wood);
+          box(shelf, [1.42, 0.66, 0.08], [0, 1.31, -0.20], darkWood);
+          for (const x of [-0.42, 0, 0.42]) {
+            box(shelf, [0.018, 0.46, 0.012], [x, 1.30, -0.155], wood);
+          }
+          return shelf;
+        }
+
+        createWorktable();
+        createShelf();
+
+        const flowerbed = new THREE.Group();
+        flowerbed.position.set(0.15, 0, -1.25);
+        scene.add(flowerbed);
+        box(flowerbed, [1.15, 0.18, 0.52], [0, 0.09, 0], mat(COLORS.wood));
+        box(flowerbed, [1.05, 0.05, 0.43], [0, 0.20, 0], mat(COLORS.claySoil));
+        const gardenFlowerColors = [COLORS.clayPink, COLORS.clayYellow, COLORS.clayWhite];
+        for (let index = 0; index < 3; index += 1) {
+          const x = -0.34 + index * 0.34;
+          const height = 0.48 + (index % 2) * 0.12;
+          addStem(flowerbed, [x, 0.22, 0], [x + 0.06, height, 0], 0.025, clay(COLORS.clayGreen));
+          sculptedSphere(
+            flowerbed, 0.12, clay(gardenFlowerColors[index]),
+            [x + 0.06, height + 0.08, 0], index + 4
+          );
+          for (const side of [-1, 1]) {
+            const leaf = sculptedSphere(
+              flowerbed, 0.11, clay(COLORS.clayLeaf),
+              [x + side * 0.10, height * 0.64, side * 0.04], index + side + 8
+            );
+            leaf.scale.set(1.3, 0.45, 0.65);
+          }
+        }
+
+        function createPot() {
+          const pot = new THREE.Group();
+          const clayBody = clay(COLORS.clayRed);
+          const profile = [
+            new THREE.Vector2(0.13, 0),
+            new THREE.Vector2(0.17, 0.035),
+            new THREE.Vector2(0.21, 0.31),
+            new THREE.Vector2(0.25, PLANT_POT_HEIGHT - 0.02),
+            new THREE.Vector2(0.22, PLANT_POT_HEIGHT - 0.02),
+            new THREE.Vector2(0.19, 0.32),
+            new THREE.Vector2(0.11, 0.07)
+          ];
+          mesh(pot, new THREE.LatheGeometry(profile, 28), clayBody);
+
+          const rim = mesh(
+            pot,
+            new THREE.TorusGeometry(0.235, 0.028, 8, 28),
+            clayBody,
+            [0, PLANT_POT_HEIGHT - 0.025, 0]
+          );
+          rim.rotation.x = Math.PI / 2;
+
+          const soil = mesh(
+            pot,
+            new THREE.CylinderGeometry(0.185, 0.17, 0.035, 20),
+            clay(COLORS.claySoil),
+            [0, 0.34, 0]
+          );
+          soil.receiveShadow = true;
+
+          const markMaterial = mat(0x8f433c, 0.9);
+          for (const offset of [-0.04, 0.04]) {
+            const markCurve = new THREE.CatmullRomCurve3([
+              new THREE.Vector3(offset - 0.04, 0.16, 0.183),
+              new THREE.Vector3(offset - 0.01, 0.19, 0.194),
+              new THREE.Vector3(offset + 0.025, 0.18, 0.197),
+              new THREE.Vector3(offset + 0.05, 0.15, 0.19)
+            ]);
+            mesh(pot, new THREE.TubeGeometry(markCurve, 10, 0.004, 5, false), markMaterial);
+          }
+
+          addStem(pot, [0, 0.35, 0], [0.02, 0.75, 0], 0.022, clay(COLORS.clayGreen));
+          addStem(pot, [0.02, 0.45, 0], [-0.15, 0.68, 0.02], 0.017, clay(COLORS.clayGreen));
+          addStem(pot, [0.02, 0.49, 0], [0.18, 0.72, -0.03], 0.017, clay(COLORS.clayGreen));
+          const leaves = [
+            [-0.10, 0.58, 0.04, -0.4],
+            [0.13, 0.62, -0.02, 0.5],
+            [-0.02, 0.73, 0.02, -0.2]
+          ];
+          for (const [x, y, z, angle] of leaves) {
+            const leaf = sculptedSphere(
+              pot, 0.11, clay(COLORS.clayLeaf), [x, y, z], x + y
+            );
+            leaf.scale.set(1.65, 0.48, 0.72);
+            leaf.rotation.z = angle;
+          }
+          const bloom = sculptedSphere(
+            pot, 0.09, clay(COLORS.clayYellow), [0.02, 0.76, 0], 17
+          );
+          bloom.scale.set(1.0, 0.82, 0.9);
+          return pot;
+        }
+
+        const pot = createPot();
+
+        const character = new THREE.Group();
+        character.position.set(-3.55, 0, CHARACTER_Z);
+        character.rotation.y = CHARACTER_YAW;
+        scene.add(character);
+
+        const torso = capsule(character, 0.29, 0.36, [0, 1.04, 0], clay(COLORS.clayBlue));
+        torso.scale.set(1.0, 1.0, 0.86);
+        sculptedSphere(character, 0.10, clay(COLORS.clayCream), [0, 1.24, 0.17], 23);
+
+        const head = new THREE.Group();
+        head.position.set(0, 1.78, 0.02);
+        character.add(head);
+        const headForm = sculptedSphere(head, 0.35, clay(COLORS.clayCream), [0, 0, 0], 31);
+        headForm.scale.set(1.02, 0.98, 0.94);
+        sculptedSphere(head, 0.30, clay(COLORS.clayHair), [0, 0.12, -0.12], 32)
+          .scale.set(1.03, 0.68, 0.84);
+        for (let curl = 0; curl < 5; curl += 1) {
+          const angle = Math.PI * 0.25 + curl * Math.PI * 0.25;
+          sculptedSphere(
+            head,
+            0.11,
+            clay(COLORS.clayHair),
+            [Math.cos(angle) * 0.22, 0.22 + (curl % 2) * 0.025, -0.02],
+            curl + 40
+          );
+        }
+
+        for (const side of [-1, 1]) {
+          sculptedSphere(head, 0.077, mat(COLORS.eye, 0.35), [side * 0.12, 0.035, 0.292], side + 50);
+          sculptedSphere(head, 0.036, mat(COLORS.pupil, 0.3), [side * 0.12, 0.03, 0.354], side + 60);
+          sculptedSphere(
+            head, 0.028, clay(COLORS.clayPink),
+            [side * 0.22, -0.095, 0.267], side + 70
+          ).scale.set(1.2, 0.75, 0.5);
+        }
+        const smile = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-0.105, -0.105, 0.289),
+          new THREE.Vector3(-0.055, -0.15, 0.321),
+          new THREE.Vector3(0.02, -0.16, 0.327),
+          new THREE.Vector3(0.095, -0.11, 0.294)
+        ]);
+        mesh(head, new THREE.TubeGeometry(smile, 14, 0.014, 6, false), clay(COLORS.clayMouth));
+
+        const upperArms = [];
+        const ARM_SHOULDER_Y = 1.31;
+        function createArm(side) {
+          const shoulder = new THREE.Group();
+          shoulder.position.set(side * 0.22, ARM_SHOULDER_Y, 0.015);
+          character.add(shoulder);
+
+          const upper = new THREE.Group();
+          shoulder.add(upper);
+          capsule(upper, 0.115, 0.22, [0, -ARM_UPPER_LENGTH / 2, 0], clay(COLORS.clayBlue));
+          sculptedSphere(upper, 0.13, clay(COLORS.clayBlue), [0, 0, 0], side + 80);
+
+          const elbow = new THREE.Group();
+          elbow.position.y = -ARM_UPPER_LENGTH;
+          upper.add(elbow);
+          sculptedSphere(elbow, 0.105, clay(COLORS.clayBlue), [0, 0, 0], side + 82);
+
+          const forearm = new THREE.Group();
+          elbow.add(forearm);
+          capsule(
+            forearm, 0.10, 0.22,
+            [0, -ARM_FOREARM_LENGTH / 2, 0], clay(COLORS.clayBlue)
+          );
+          const hand = sculptedSphere(
+            forearm, 0.12, clay(COLORS.clayCream),
+            [0, -ARM_FOREARM_LENGTH, 0.025], side + 84
+          );
+          hand.scale.set(1.0, 0.85, 1.15);
+          upperArms.push({ side, shoulder, upper, elbow, forearm });
+        }
+        createArm(-1);
+        createArm(1);
+
+        const legs = [];
+        function createLeg(side) {
+          const hip = new THREE.Group();
+          hip.position.set(side * 0.14, 0.69, 0);
+          character.add(hip);
+          capsule(hip, 0.145, 0.07, [0, -0.16, 0], clay(COLORS.clayGreen));
+
+          const knee = new THREE.Group();
+          knee.position.y = -0.32;
+          hip.add(knee);
+          sculptedSphere(knee, 0.12, clay(COLORS.clayGreen), [0, 0, 0], side + 90);
+          capsule(knee, 0.12, 0.07, [0, -0.16, 0], clay(COLORS.clayGreen));
+          sculptedSphere(
+            knee, 0.145, clay(COLORS.clayOrange), [0, -0.32, 0.08], side + 95
+          ).scale.set(1.0, 0.62, 1.45);
+          legs.push({ hip, knee, side });
+        }
+        createLeg(-1);
+        createLeg(1);
+
+        const carryAnchor = new THREE.Group();
+        carryAnchor.position.set(CARRY_X, TABLE_TOP_Y, CARRY_Z);
+        character.add(carryAnchor);
+
+        const tablePotPosition = new THREE.Vector3(
+          TABLE_STATION_X + CARRY_Z,
+          TABLE_TOP_Y,
+          CHARACTER_Z - CARRY_X
+        );
+        pot.position.copy(tablePotPosition);
+        scene.add(pot);
+        let potMode = "table";
+
+        function ease(value) {
+          const amount = THREE.MathUtils.clamp(value, 0, 1);
+          return amount * amount * (3 - 2 * amount);
+        }
+
+        function characterX(time) {
+          if (time < 2.0) {
+            return THREE.MathUtils.lerp(-3.55, TABLE_STATION_X, ease(time / 2.0));
+          }
+          if (time < 3.5) {
+            return TABLE_STATION_X;
+          }
+          if (time < 6.4) {
+            return THREE.MathUtils.lerp(
+              TABLE_STATION_X,
+              FINAL_CHARACTER_X,
+              ease((time - 3.5) / 2.9)
+            );
+          }
+          return FINAL_CHARACTER_X;
+        }
+
+        function handTarget(side, carryHeight, reachWeight) {
+          const neutral = new THREE.Vector3(side * 0.38, 0.73, 0.02);
+          const reach = new THREE.Vector3(
+            CARRY_X + side * 0.22,
+            carryHeight + 0.16,
+            CARRY_Z
+          );
+          return neutral.lerp(reach, reachWeight);
+        }
+
+        function setArmPose(arm, target) {
+          const shoulder = arm.shoulder.position.clone();
+          const offset = target.clone().sub(shoulder);
+          const distance = THREE.MathUtils.clamp(
+            offset.length(),
+            Math.abs(ARM_UPPER_LENGTH - ARM_FOREARM_LENGTH) + 0.001,
+            ARM_UPPER_LENGTH + ARM_FOREARM_LENGTH - 0.001
+          );
+          const direction = offset.normalize();
+          const cosine = THREE.MathUtils.clamp(
+            (ARM_UPPER_LENGTH ** 2 + distance ** 2 - ARM_FOREARM_LENGTH ** 2)
+              / (2 * ARM_UPPER_LENGTH * distance),
+            -1,
+            1
+          );
+          const bend = new THREE.Vector3(arm.side, 0, 0);
+          bend.addScaledVector(direction, -bend.dot(direction));
+          if (bend.lengthSq() < 0.0001) {
+            bend.set(0, 0, 1).addScaledVector(direction, -direction.z);
+          }
+          bend.normalize();
+
+          const elbowPosition = shoulder
+            .addScaledVector(direction, ARM_UPPER_LENGTH * cosine)
+            .addScaledVector(
+              bend,
+              ARM_UPPER_LENGTH * Math.sqrt(Math.max(0, 1 - cosine * cosine))
+            );
+          const upperDirection = elbowPosition.clone().sub(arm.shoulder.position).normalize();
+          arm.upper.quaternion.setFromUnitVectors(DOWN, upperDirection);
+          arm.elbow.position.set(0, -ARM_UPPER_LENGTH, 0);
+
+          const forearmDirection = target.clone().sub(elbowPosition).normalize();
+          forearmDirection.applyQuaternion(arm.upper.quaternion.clone().invert());
+          arm.forearm.quaternion.setFromUnitVectors(DOWN, forearmDirection);
+        }
+
+        function updatePotMode(time) {
+          const desiredMode = time < PICKUP_TIME
+            ? "table"
+            : time < RELEASE_TIME
+              ? "carried"
+              : "placed";
+          if (desiredMode === potMode) return;
+
+          if (desiredMode === "carried") {
+            carryAnchor.updateWorldMatrix(true, false);
+            pot.position.copy(carryAnchor.getWorldPosition(new THREE.Vector3()));
+            pot.rotation.set(0, 0, 0);
+            scene.add(pot);
+            carryAnchor.attach(pot);
+          } else if (desiredMode === "placed") {
+            scene.attach(pot);
+          } else {
+            scene.attach(pot);
+            pot.position.copy(tablePotPosition);
+            pot.rotation.set(0, 0, 0);
+          }
+          potMode = desiredMode;
+        }
+
+        function update(time) {
+          character.position.x = characterX(time);
+          const isWalking = time < 2.0 || (time >= 3.5 && time < 6.4);
+          const walkStrength = isWalking ? 1 : 0;
+          const stepTime = Math.floor(time * STOP_MOTION_FPS) / STOP_MOTION_FPS;
+          const stepPhase = (stepTime - (time < 2.0 ? 0 : 3.5)) * Math.PI * 3.2;
+          character.position.y = walkStrength * Math.abs(Math.sin(stepPhase)) * 0.025;
+
+          for (const leg of legs) {
+            const phase = stepPhase + (leg.side < 0 ? Math.PI : 0);
+            leg.hip.rotation.x = walkStrength * Math.sin(phase) * 0.34;
+            leg.knee.rotation.x = walkStrength * Math.max(0, Math.sin(phase)) * 0.22;
+          }
+
+          let reachWeight = 0;
+          if (time >= 2.0 && time < 2.8) {
+            reachWeight = ease((time - 2.0) / 0.8);
+          } else if (time >= 2.8 && time < 7.2) {
+            reachWeight = 1;
+          } else if (time >= 7.2 && time < 8.0) {
+            reachWeight = 1 - ease((time - 7.2) / 0.8);
+          }
+
+          let carryHeight = TABLE_TOP_Y;
+          if (time >= 3.0 && time < 3.5) {
+            carryHeight = THREE.MathUtils.lerp(
+              TABLE_TOP_Y, 1.18, ease((time - 3.0) / 0.5)
+            );
+          } else if (time >= 3.5 && time < 6.4) {
+            carryHeight = 1.18;
+          } else if (time >= 6.4 && time < 7.0) {
+            carryHeight = THREE.MathUtils.lerp(
+              1.18, TABLE_TOP_Y, ease((time - 6.4) / 0.6)
+            );
+          }
+          carryAnchor.position.y = carryHeight;
+
+          for (const arm of upperArms) {
+            setArmPose(arm, handTarget(arm.side, carryHeight, reachWeight));
+          }
+          updatePotMode(time);
+        }
+
+        const startTime = performance.now();
+        function resize() {
+          const width = Math.max(1, canvas.clientWidth);
+          const height = Math.max(1, canvas.clientHeight);
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        function animate(now) {
+          const elapsed = Math.min((now - startTime) / 1000, DURATION);
+          const poseTime = Math.floor(elapsed * STOP_MOTION_FPS) / STOP_MOTION_FPS;
+          update(poseTime);
+          renderer.render(scene, camera);
+          if (elapsed < DURATION) {
+            requestAnimationFrame(animate);
+          }
+        }
+        requestAnimationFrame(animate);
+      } catch (error) {
+        console.error("Claymation scene initialization failed.", error);
+        errorPanel.textContent = `Scene initialization failed: ${error.message}`;
+        errorPanel.hidden = false;
+      }
+    })();
+  </script>
+</body>
+</html>

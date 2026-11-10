@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Miniature Lunar Outpost</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #070b12;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 42%, #172334 0, #0b111c 48%, #05080e 100%);
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    .frame {
+      position: relative;
+      width: min(94vw, 120vh, 960px);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid rgb(190 205 224 / 24%);
+      border-radius: 12px;
+      background: #090e17;
+      box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #error {
+      position: absolute;
+      inset: 12px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      overflow: auto;
+      color: #ffe4e4;
+      background: rgb(70 12 18 / 94%);
+      font: 14px/1.5 ui-monospace, monospace;
+      white-space: pre-wrap;
+    }
+
+    #error.visible {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+  <main class="frame" aria-label="Miniature lunar research outpost animation">
+    <canvas id="scene" aria-label="Three-dimensional lunar outpost diorama"></canvas>
+    <output id="error" role="alert" aria-live="assertive"></output>
+  </main>
+  <script type="module">
+    const errorPanel = document.querySelector("#error");
+
+    function reportError(error) {
+      console.error("Lunar outpost runtime error:", error);
+      errorPanel.textContent = `Runtime error: ${error?.message ?? error}`;
+      errorPanel.classList.add("visible");
+    }
+
+    try {
+      const THREE = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"
+      );
+
+      initializeScene(THREE);
+    } catch (error) {
+      reportError(error);
+    }
+
+    function initializeScene(THREE) {
+      const frame = document.querySelector(".frame");
+      const canvas = document.querySelector("#scene");
+      const durationSeconds = 6;
+      const baseRadius = 15;
+      const terrainRadius = 14.72;
+      const wheelRadius = 0.27;
+      const earthTarget = new THREE.Vector3(-10.8, 9.2, 7.4);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x080d16);
+      scene.fog = new THREE.Fog(0x080d16, 48, 100);
+
+      const camera = new THREE.PerspectiveCamera(39, 4 / 3, 0.1, 150);
+      const cameraTarget = new THREE.Vector3(0, 1.35, 0);
+      const cameraRadius = 42;
+      const cameraHeight = 22;
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance"
+      });
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer.setSize(frame.clientWidth, frame.clientHeight, false);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene.add(new THREE.HemisphereLight(0xb9d3f0, 0x38313a, 1.45));
+
+      const sunlight = new THREE.DirectionalLight(0xffe0b0, 3.1);
+      sunlight.position.set(-11, 22, 14);
+      sunlight.castShadow = true;
+      sunlight.shadow.mapSize.set(1536, 1536);
+      sunlight.shadow.camera.left = -19;
+      sunlight.shadow.camera.right = 19;
+      sunlight.shadow.camera.top = 19;
+      sunlight.shadow.camera.bottom = -19;
+      sunlight.shadow.camera.near = 0.5;
+      sunlight.shadow.camera.far = 65;
+      sunlight.shadow.normalBias = 0.035;
+      sunlight.shadow.camera.updateProjectionMatrix();
+      scene.add(sunlight);
+
+      const coolFill = new THREE.DirectionalLight(0x8db8e8, 0.68);
+      coolFill.position.set(13, 9, -12);
+      scene.add(coolFill);
+
+      const materials = {
+        base: new THREE.MeshStandardMaterial({ color: 0x343b47, roughness: 0.78 }),
+        trim: new THREE.MeshStandardMaterial({ color: 0x68707a, roughness: 0.62, metalness: 0.18 }),
+        habitat: new THREE.MeshStandardMaterial({ color: 0xd5c8a9, roughness: 0.82 }),
+        habitatShade: new THREE.MeshStandardMaterial({ color: 0x928873, roughness: 0.9 }),
+        seal: new THREE.MeshStandardMaterial({ color: 0x4c5660, roughness: 0.72, metalness: 0.28 }),
+        glass: new THREE.MeshStandardMaterial({
+          color: 0x69a9ca,
+          roughness: 0.24,
+          metalness: 0.22,
+          emissive: 0x153448,
+          emissiveIntensity: 0.2
+        }),
+        panel: new THREE.MeshStandardMaterial({
+          color: 0x234d70,
+          roughness: 0.38,
+          metalness: 0.34
+        }),
+        panelLine: new THREE.MeshStandardMaterial({ color: 0x93afbb, roughness: 0.48, metalness: 0.3 }),
+        rover: new THREE.MeshStandardMaterial({ color: 0xc98e50, roughness: 0.77, metalness: 0.12 }),
+        roverLight: new THREE.MeshStandardMaterial({ color: 0xe7d2a3, roughness: 0.68 }),
+        rubber: new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.96 }),
+        track: new THREE.MeshStandardMaterial({ color: 0x45464a, roughness: 1 }),
+        rock: new THREE.MeshStandardMaterial({ color: 0x686660, roughness: 0.98, flatShading: true }),
+        earth: new THREE.MeshStandardMaterial({ color: 0x3278b8, roughness: 0.9 }),
+        continent: new THREE.MeshStandardMaterial({ color: 0x79a77a, roughness: 1 }),
+        atmosphere: new THREE.MeshBasicMaterial({ color: 0x7dbcf3, transparent: true, opacity: 0.18 })
+      };
+
+      function addMesh(geometry, material, parent = scene, castShadow = true, receiveShadow = true) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = receiveShadow;
+        parent.add(mesh);
+        return mesh;
+      }
+
+      function smoothstep(edge0, edge1, value) {
+        const t = THREE.MathUtils.clamp((value - edge0) / (edge1 - edge0), 0, 1);
+        return t * t * (3 - 2 * t);
+      }
+
+      function terrainHeight(x, z) {
+        const radius = Math.hypot(x, z);
+        const edgeFade = 1 - smoothstep(terrainRadius - 1.1, terrainRadius, radius);
+        const craterDistance = Math.hypot(x - 5.7, z + 7.1);
+        const craterBowl = -0.78 * Math.exp(-(craterDistance * craterDistance) / 2.2);
+        const craterRim = 0.38 * Math.exp(-((craterDistance - 2.15) ** 2) / 0.12);
+        const ridge = 0.64 * Math.exp(-(((x + 0.4) ** 2) / 5.2) - (((z + 7.2) ** 2) / 1.8));
+        const shallowRelief =
+          0.1 * Math.sin(x * 0.73 + z * 0.31) * Math.cos(z * 0.64) +
+          0.05 * Math.sin(x * 1.37 - z * 0.82);
+        return 0.035 + edgeFade * (craterBowl + craterRim + ridge + shallowRelief);
+      }
+
+      const base = addMesh(
+        new THREE.CylinderGeometry(baseRadius, baseRadius + 0.18, 0.82, 112),
+        materials.base
+      );
+      base.position.y = -0.43;
+
+      const lowerTrim = addMesh(
+        new THREE.CylinderGeometry(baseRadius + 0.03, baseRadius + 0.08, 0.12, 112),
+        materials.trim
+      );
+      lowerTrim.position.y = -0.69;
+
+      const terrainGeometry = new THREE.BufferGeometry();
+      const rings = 42;
+      const segments = 192;
+      const positions = [];
+      const colors = [];
+      const indices = [];
+      const lowColor = new THREE.Color(0x625e58);
+      const midColor = new THREE.Color(0x81796a);
+      const highColor = new THREE.Color(0xa69a82);
+
+      for (let ring = 0; ring <= rings; ring += 1) {
+        const radius = terrainRadius * ring / rings;
+        for (let segment = 0; segment < segments; segment += 1) {
+          const angle = 2 * Math.PI * segment / segments;
+          const x = radius * Math.cos(angle);
+          const z = radius * Math.sin(angle);
+          const y = terrainHeight(x, z);
+          positions.push(x, y, z);
+
+          const shade = THREE.MathUtils.clamp((y + 0.56) / 1.45, 0, 1);
+          const color = lowColor.clone().lerp(midColor, smoothstep(0, 0.58, shade));
+          color.lerp(highColor, smoothstep(0.5, 1, shade) * 0.44);
+          colors.push(color.r, color.g, color.b);
+        }
+      }
+
+      for (let ring = 0; ring < rings; ring += 1) {
+        for (let segment = 0; segment < segments; segment += 1) {
+          const next = (segment + 1) % segments;
+          const a = ring * segments + segment;
+          const b = ring * segments + next;
+          const c = (ring + 1) * segments + segment;
+          const d = (ring + 1) * segments + next;
+          indices.push(a, b, c, b, d, c);
+        }
+      }
+
+      terrainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      terrainGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      terrainGeometry.setIndex(indices);
+      terrainGeometry.computeVertexNormals();
+      addMesh(
+        terrainGeometry,
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.98, flatShading: false })
+      );
+
+      const terrainEdge = addMesh(
+        new THREE.TorusGeometry(terrainRadius - 0.05, 0.1, 8, 160),
+        materials.trim
+      );
+      terrainEdge.rotation.x = Math.PI / 2;
+      terrainEdge.position.y = 0.015;
+
+      const craterRim = addMesh(
+        new THREE.TorusGeometry(2.12, 0.18, 10, 64),
+        materials.rock
+      );
+      craterRim.position.set(5.7, terrainHeight(5.7, -7.1) + 0.03, -7.1);
+
+      function placeRock(x, z, scale, rotation) {
+        const rock = addMesh(
+          new THREE.IcosahedronGeometry(1, 1),
+          materials.rock
+        );
+        rock.position.set(x, terrainHeight(x, z) + scale.y * 0.42, z);
+        rock.scale.set(scale.x, scale.y, scale.z);
+        rock.rotation.set(rotation.x, rotation.y, rotation.z);
+      }
+
+      [
+        [-11.4, 4.3, [0.55, 0.34, 0.42], [0.2, 0.4, 0.1]],
+        [-9.2, -6.8, [0.46, 0.3, 0.58], [0.4, 0.2, 0.6]],
+        [-7.1, 8.1, [0.35, 0.25, 0.31], [0.1, 0.8, 0.2]],
+        [8.6, 5.1, [0.62, 0.38, 0.48], [0.5, 0.1, 0.3]],
+        [10.4, -1.7, [0.4, 0.28, 0.35], [0.2, 0.5, 0.4]],
+        [1.5, -10.6, [0.7, 0.42, 0.52], [0.1, 0.3, 0.7]],
+        [-10.2, -3.9, [0.32, 0.23, 0.38], [0.6, 0.2, 0.1]],
+        [9.5, 8.6, [0.38, 0.27, 0.33], [0.2, 0.7, 0.2]]
+      ].forEach(([x, z, scale, rotation]) => {
+        placeRock(x, z, { x: scale[0], y: scale[1], z: scale[2] }, { x: rotation[0], y: rotation[1], z: rotation[2] });
+      });
+
+      function addCylinderBetween(parent, start, end, radius, material, radialSegments = 10) {
+        const direction = new THREE.Vector3().subVectors(end, start);
+        const length = direction.length();
+        const mesh = addMesh(
+          new THREE.CylinderGeometry(radius, radius, length, radialSegments),
+          material,
+          parent
+        );
+        mesh.position.copy(start).add(end).multiplyScalar(0.5);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+        return mesh;
+      }
+
+      const habitatX = -5.15;
+      const habitatZ = 2.25;
+      const habitatGround = terrainHeight(habitatX, habitatZ);
+      const habitat = new THREE.Group();
+      habitat.position.set(habitatX, habitatGround, habitatZ);
+      scene.add(habitat);
+
+      const habitatPod = addMesh(
+        new THREE.CylinderGeometry(0.78, 0.78, 3.45, 28, 1, false),
+        materials.habitat,
+        habitat
+      );
+      habitatPod.rotation.x = Math.PI / 2;
+      habitatPod.position.y = 1.35;
+
+      const rearCap = addMesh(new THREE.SphereGeometry(0.78, 24, 16), materials.habitatShade, habitat);
+      rearCap.scale.z = 0.28;
+      rearCap.position.set(0, 1.35, -1.7);
+
+      const frontCap = addMesh(new THREE.SphereGeometry(0.78, 24, 16), materials.habitat, habitat);
+      frontCap.scale.z = 0.28;
+      frontCap.position.set(0, 1.35, 1.7);
+
+      const airlock = addMesh(
+        new THREE.CylinderGeometry(0.48, 0.48, 0.76, 24),
+        materials.habitatShade,
+        habitat
+      );
+      airlock.rotation.x = Math.PI / 2;
+      airlock.position.set(0, 1.32, 2.05);
+
+      const hatch = addMesh(
+        new THREE.CylinderGeometry(0.31, 0.31, 0.06, 24),
+        materials.seal,
+        habitat
+      );
+      hatch.rotation.x = Math.PI / 2;
+      hatch.position.set(0, 1.32, 2.45);
+
+      for (const x of [-0.46, 0.46]) {
+        const window = addMesh(new THREE.SphereGeometry(0.16, 18, 12), materials.glass, habitat);
+        window.scale.set(1, 0.72, 0.28);
+        window.position.set(x, 1.52, 1.82);
+      }
+
+      for (const x of [-0.57, 0.57]) {
+        addCylinderBetween(
+          habitat,
+          new THREE.Vector3(x, 0.02, -0.85),
+          new THREE.Vector3(x, 0.63, -0.7),
+          0.075,
+          materials.seal
+        );
+        addCylinderBetween(
+          habitat,
+          new THREE.Vector3(x, 0.02, 0.85),
+          new THREE.Vector3(x, 0.63, 0.7),
+          0.075,
+          materials.seal
+        );
+      }
+
+      const earth = new THREE.Group();
+      scene.add(earth);
+      earth.position.copy(earthTarget);
+
+      const earthBall = addMesh(new THREE.SphereGeometry(0.94, 28, 20), materials.earth, earth, false, false);
+      earthBall.scale.set(1, 0.98, 0.98);
+
+      const continentA = addMesh(new THREE.SphereGeometry(0.28, 14, 10), materials.continent, earth, false, false);
+      continentA.scale.set(1.25, 0.35, 0.82);
+      continentA.position.set(0.3, 0.25, 0.65);
+
+      const continentB = addMesh(new THREE.SphereGeometry(0.19, 12, 8), materials.continent, earth, false, false);
+      continentB.scale.set(0.78, 0.34, 1.15);
+      continentB.position.set(-0.38, -0.25, 0.78);
+
+      const atmosphere = addMesh(
+        new THREE.SphereGeometry(1.06, 24, 16),
+        materials.atmosphere,
+        earth,
+        false,
+        false
+      );
+
+      const dishMount = new THREE.Group();
+      dishMount.position.set(habitatX + 1.25, habitatGround + 0.035, habitatZ - 0.6);
+      scene.add(dishMount);
+
+      const mast = addMesh(
+        new THREE.CylinderGeometry(0.075, 0.1, 1.02, 12),
+        materials.seal,
+        dishMount
+      );
+      mast.position.y = 0.51;
+
+      const dishPivot = new THREE.Group();
+      dishPivot.position.y = 1.02;
+      dishMount.add(dishPivot);
+
+      const dishRim = addMesh(
+        new THREE.LatheGeometry(
+          [
+            new THREE.Vector2(0.02, 0),
+            new THREE.Vector2(0.18, 0.035),
+            new THREE.Vector2(0.36, 0.12),
+            new THREE.Vector2(0.52, 0.25)
+          ],
+          28
+        ),
+        materials.trim,
+        dishPivot
+      );
+      dishRim.rotation.x = Math.PI / 2;
+      dishRim.position.y = 0.05;
+
+      const receiver = addMesh(
+        new THREE.SphereGeometry(0.09, 12, 8),
+        materials.roverLight,
+        dishPivot
+      );
+      receiver.position.set(0, 0.05, 0.35);
+
+      const panelArray = new THREE.Group();
+      panelArray.position.set(-1.72, habitatGround, habitatZ - 1.05);
+      panelArray.rotation.y = -0.18;
+      scene.add(panelArray);
+
+      for (const x of [-1.12, 0, 1.12]) {
+        const post = addMesh(
+          new THREE.CylinderGeometry(0.055, 0.075, 0.72, 10),
+          materials.seal,
+          panelArray
+        );
+        post.position.set(x, 0.42, 0);
+
+        const panel = addMesh(
+          new THREE.BoxGeometry(1.02, 0.075, 0.78),
+          materials.panel,
+          panelArray
+        );
+        panel.position.set(x, 0.82, 0);
+        panel.rotation.x = -0.12;
+
+        for (const lineX of [-0.3, 0, 0.3]) {
+          const gridLine = addMesh(
+            new THREE.BoxGeometry(0.018, 0.012, 0.7),
+            materials.panelLine,
+            panelArray,
+            false,
+            false
+          );
+          gridLine.position.set(x + lineX, 0.865, 0);
+        }
+      }
+
+      const routePoints = [
+        [5.4, 5.6],
+        [4.1, 3.3],
+        [2.4, 1.3],
+        [0.1, 0.15],
+        [-1.7, -1.1],
+        [-2.4, -3.2],
+        [-1.2, -5.2]
+      ].map(([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.035, z));
+      const roverPath = new THREE.CatmullRomCurve3(routePoints, false, "centripetal", 0.35);
+      const pathSamples = 100;
+
+      function makeTrack(side) {
+        const points = [];
+        for (let index = 0; index <= pathSamples; index += 1) {
+          const u = index / pathSamples;
+          const point = roverPath.getPointAt(u);
+          const tangent = roverPath.getTangentAt(u);
+          const normal = new THREE.Vector3(tangent.z, 0, -tangent.x).normalize().multiplyScalar(side * 0.34);
+          const x = point.x + normal.x;
+          const z = point.z + normal.z;
+          points.push(new THREE.Vector3(x, terrainHeight(x, z) + 0.05, z));
+        }
+        return new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
+      }
+
+      for (const side of [-1, 1]) {
+        addMesh(
+          new THREE.TubeGeometry(makeTrack(side), pathSamples, 0.055, 6, false),
+          materials.track,
+          scene,
+          false,
+          true
+        );
+      }
+
+      const rover = new THREE.Group();
+      scene.add(rover);
+
+      const chassis = addMesh(
+        new THREE.BoxGeometry(1.34, 0.28, 1.92),
+        materials.rover,
+        rover
+      );
+      chassis.position.set(0, 0.57, 0);
+
+      const deck = addMesh(
+        new THREE.BoxGeometry(1.05, 0.24, 1.13),
+        materials.roverLight,
+        rover
+      );
+      deck.position.set(0, 0.81, -0.11);
+
+      const equipment = addMesh(
+        new THREE.BoxGeometry(0.62, 0.23, 0.48),
+        materials.seal,
+        rover
+      );
+      equipment.position.set(0, 1.03, -0.15);
+
+      const roverMast = addMesh(
+        new THREE.CylinderGeometry(0.035, 0.045, 0.64, 10),
+        materials.seal,
+        rover
+      );
+      roverMast.position.set(0.3, 1.28, -0.34);
+
+      const roverCamera = addMesh(
+        new THREE.SphereGeometry(0.11, 14, 10),
+        materials.glass,
+        rover
+      );
+      roverCamera.position.set(0.3, 1.63, -0.34);
+
+      const wheels = [];
+      for (const side of [-1, 1]) {
+        for (const z of [-0.64, 0, 0.64]) {
+          const wheelGroup = new THREE.Group();
+          wheelGroup.position.set(side * 0.74, wheelRadius, z);
+          rover.add(wheelGroup);
+
+          const wheel = addMesh(
+            new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.18, 18),
+            materials.rubber,
+            wheelGroup
+          );
+          wheel.geometry.rotateZ(Math.PI / 2);
+
+          for (let treadIndex = 0; treadIndex < 8; treadIndex += 1) {
+            const angle = 2 * Math.PI * treadIndex / 8;
+            const tread = addMesh(
+              new THREE.BoxGeometry(0.19, 0.105, 0.055),
+              materials.trim,
+              wheel,
+              false,
+              false
+            );
+            tread.position.set(
+              0,
+              (wheelRadius - 0.015) * Math.sin(angle),
+              (wheelRadius - 0.015) * Math.cos(angle)
+            );
+            tread.rotation.x = -angle;
+          }
+
+          const hub = addMesh(
+            new THREE.CylinderGeometry(0.105, 0.105, 0.2, 14),
+            materials.trim,
+            wheelGroup
+          );
+          hub.geometry.rotateZ(Math.PI / 2);
+          wheels.push(wheelGroup);
+          wheelGroup.userData.wheelMesh = wheel;
+        }
+      }
+
+      const driveDistance = roverPath.getLength();
+      const cameraStartAngle = Math.atan2(22, 27);
+      let currentTime = 0;
+      let playing = false;
+      let startedAt = 0;
+      let animationFrame = 0;
+
+      function render() {
+        renderer.render(scene, camera);
+      }
+
+      function applyTime(seconds) {
+        currentTime = THREE.MathUtils.clamp(seconds, 0, durationSeconds);
+        const rawProgress = currentTime / durationSeconds;
+        const progress = rawProgress * rawProgress * (3 - 2 * rawProgress);
+        const point = roverPath.getPointAt(progress);
+        const tangent = roverPath.getTangentAt(progress);
+        rover.position.set(point.x, point.y, point.z);
+        rover.rotation.y = Math.atan2(tangent.x, tangent.z);
+
+        const wheelAngle = -driveDistance * progress / wheelRadius;
+        for (const wheelGroup of wheels) {
+          wheelGroup.userData.wheelMesh.rotation.x = wheelAngle;
+        }
+
+        const earthDrift = Math.sin(progress * Math.PI) * 1.15;
+        earth.position.set(earthTarget.x + earthDrift, earthTarget.y, earthTarget.z);
+        dishPivot.lookAt(earth.position);
+
+        const orbit = cameraStartAngle + (progress - 0.5) * 0.12;
+        camera.position.set(
+          Math.sin(orbit) * cameraRadius,
+          cameraHeight,
+          Math.cos(orbit) * cameraRadius
+        );
+        camera.lookAt(cameraTarget);
+        render();
+      }
+
+      function pause() {
+        playing = false;
+      }
+
+      function setTime(seconds) {
+        pause();
+        applyTime(seconds);
+      }
+
+      function reset() {
+        pause();
+        applyTime(0);
+      }
+
+      function tick(now) {
+        animationFrame = 0;
+        if (!playing) return;
+
+        const elapsed = (now - startedAt) / 1000;
+        applyTime(elapsed);
+        if (elapsed >= durationSeconds) {
+          playing = false;
+          return;
+        }
+        animationFrame = window.requestAnimationFrame(tick);
+      }
+
+      function play() {
+        if (playing) return;
+        if (currentTime >= durationSeconds) applyTime(0);
+        startedAt = performance.now() - currentTime * 1000;
+        playing = true;
+        if (!animationFrame) animationFrame = window.requestAnimationFrame(tick);
+      }
+
+      function resize() {
+        const width = Math.max(1, frame.clientWidth);
+        const height = Math.max(1, frame.clientHeight);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+        render();
+      }
+
+      const resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(frame);
+      window.addEventListener("resize", resize);
+      window.addEventListener("error", event => reportError(event.error ?? event.message));
+      window.addEventListener("unhandledrejection", event => reportError(event.reason));
+
+      window.TSA_ANIMATION = Object.freeze({
+        durationSeconds,
+        setTime,
+        reset,
+        play,
+        pause,
+        get currentTime() {
+          return currentTime;
+        },
+        get isPlaying() {
+          return playing;
+        }
+      });
+
+      window.addEventListener("pagehide", () => {
+        pause();
+        resizeObserver.disconnect();
+        window.removeEventListener("resize", resize);
+        renderer.dispose();
+      }, { once: true });
+
+      applyTime(0);
+      play();
+    }
+  </script>
+</body>
+</html>

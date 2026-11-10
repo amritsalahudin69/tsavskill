@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Cutout Forest Crossing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      background: #d7e5d8;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #d7e5d8;
+    }
+
+    main {
+      width: min(96vw, 960px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 8 / 5;
+      border: 4px solid #536a58;
+      background: #d7e5d8;
+    }
+
+    #init-error {
+      margin: 0;
+      padding: 0.75rem;
+      color: #fff;
+      background: #8b2f36;
+    }
+
+    #init-error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" width="960" height="600" role="img"
+      aria-label="A paper-cutout fox walks through a layered forest, crosses a wooden footbridge over a stream, and stops near a paper flower.">
+      Canvas 2D is required to display this scene.
+    </canvas>
+    <p id="init-error" role="alert" hidden></p>
+  </main>
+  <script>
+    "use strict";
+
+    const canvas = document.getElementById("scene");
+    const errorPanel = document.getElementById("init-error");
+    const ctx = canvas.getContext("2d");
+    const WIDTH = 960;
+    const HEIGHT = 600;
+    const WALK_DURATION = 9;
+    const DURATION = 11;
+    const START_X = 105;
+    const STOP_X = 745;
+    const FLOWER_X = 845;
+
+    if (!ctx) {
+      errorPanel.textContent = "Canvas 2D could not be initialized in this browser.";
+      errorPanel.hidden = false;
+    } else {
+      const paperTexture = createPaperTexture();
+
+      function createPaperTexture() {
+        const textureCanvas = document.createElement("canvas");
+        textureCanvas.width = 96;
+        textureCanvas.height = 96;
+        const textureContext = textureCanvas.getContext("2d");
+        let seed = 47;
+        const random = () => {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        };
+
+        for (let i = 0; i < 105; i += 1) {
+          const x = random() * textureCanvas.width;
+          const y = random() * textureCanvas.height;
+          const length = 1 + random() * 4;
+          textureContext.strokeStyle = i % 2
+            ? "rgba(91, 73, 52, 0.09)"
+            : "rgba(255, 250, 229, 0.18)";
+          textureContext.lineWidth = 0.6 + random() * 0.6;
+          textureContext.beginPath();
+          textureContext.moveTo(x, y);
+          textureContext.lineTo(x + length, y + random() * 1.5);
+          textureContext.stroke();
+        }
+        return ctx.createPattern(textureCanvas, "repeat");
+      }
+
+      function paperShape(makePath, fill, edge = "#695d4b", lineWidth = 2) {
+        ctx.save();
+        makePath();
+        ctx.shadowColor = "rgba(45, 54, 43, 0.25)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.lineWidth = lineWidth;
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = edge;
+        ctx.stroke();
+        ctx.clip();
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = paperTexture;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.restore();
+
+        ctx.save();
+        makePath();
+        ctx.globalAlpha = 0.32;
+        ctx.lineWidth = 0.8;
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#fff8df";
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function paperStroke(makePath, color, width, edge = "#695d4b") {
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.shadowColor = "rgba(45, 54, 43, 0.23)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 3;
+        ctx.beginPath();
+        makePath();
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = width + 2;
+        ctx.stroke();
+        ctx.shadowColor = "transparent";
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function routeY(x) {
+        if (x < 410) return 430;
+        if (x < 490) return 430 - (x - 410) * 0.375;
+        if (x < 610) return 400;
+        if (x < 690) return 400 + (x - 610) * 0.375;
+        return 430;
+      }
+
+      function routeSlope(x) {
+        if (x > 410 && x < 490) return -0.375;
+        if (x > 610 && x < 690) return 0.375;
+        return 0;
+      }
+
+      function drawPaperWash() {
+        ctx.fillStyle = "#d9e8d8";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = paperTexture;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.restore();
+
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 300);
+          ctx.bezierCurveTo(150, 260, 235, 315, 370, 278);
+          ctx.bezierCurveTo(520, 238, 680, 302, 960, 255);
+          ctx.lineTo(960, 470);
+          ctx.lineTo(0, 470);
+          ctx.closePath();
+        }, "#c5d9c1", "#8ea78b", 1.4);
+      }
+
+      function drawDistantForest() {
+        const rows = [
+          { y: 310, color: "#9cb89b", edge: "#738f76", points: [-30, 170, 315, 505, 740, 995] },
+          { y: 350, color: "#84a685", edge: "#617f68", points: [40, 240, 460, 690, 920] },
+        ];
+        rows.forEach((row, rowIndex) => {
+          row.points.forEach((x, index) => {
+            const size = rowIndex === 0 ? 1 : 0.78;
+            const top = row.y - (index % 2 === 0 ? 100 : 76) * size;
+            paperShape(() => {
+              ctx.beginPath();
+              ctx.moveTo(x - 44 * size, row.y);
+              ctx.lineTo(x - 29 * size, top + 34 * size);
+              ctx.lineTo(x - 17 * size, top + 42 * size);
+              ctx.lineTo(x - 5 * size, top);
+              ctx.lineTo(x + 10 * size, top + 37 * size);
+              ctx.lineTo(x + 25 * size, top + 28 * size);
+              ctx.lineTo(x + 47 * size, row.y);
+              ctx.closePath();
+            }, row.color, row.edge, 1.4);
+          });
+        });
+      }
+
+      function drawStream() {
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(489, 399);
+          ctx.bezierCurveTo(500, 420, 494, 444, 501, 470);
+          ctx.bezierCurveTo(508, 512, 493, 548, 503, 600);
+          ctx.lineTo(602, 600);
+          ctx.bezierCurveTo(593, 555, 606, 520, 598, 480);
+          ctx.bezierCurveTo(590, 445, 604, 418, 610, 399);
+          ctx.closePath();
+        }, "#82bfcb", "#548e9a", 2);
+
+        [0, 1, 2, 3, 4].forEach((index) => {
+          const y = 438 + index * 36;
+          paperStroke(() => {
+            ctx.beginPath();
+            ctx.moveTo(510 + (index % 2) * 12, y);
+            ctx.quadraticCurveTo(530, y - 5, 550, y);
+            ctx.quadraticCurveTo(570, y + 5, 587 - (index % 2) * 10, y);
+          }, "#b9e0db", 2.4, "#6ca9ad");
+        });
+      }
+
+      function drawBanks() {
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 430);
+          ctx.lineTo(410, 430);
+          ctx.lineTo(490, 400);
+          ctx.lineTo(490, 600);
+          ctx.lineTo(0, 600);
+          ctx.closePath();
+        }, "#6f9c68", "#4c7550", 2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(610, 400);
+          ctx.lineTo(690, 430);
+          ctx.lineTo(960, 430);
+          ctx.lineTo(960, 600);
+          ctx.lineTo(610, 600);
+          ctx.closePath();
+        }, "#729d6b", "#4c7550", 2);
+      }
+
+      function drawTree(x, base, scale, leafColor, edgeColor, trunkColor) {
+        ctx.save();
+        ctx.translate(x, base);
+        ctx.scale(scale, scale);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-10, 4);
+          ctx.lineTo(-7, -81);
+          ctx.lineTo(-14, -109);
+          ctx.lineTo(-3, -102);
+          ctx.lineTo(3, -128);
+          ctx.lineTo(8, -98);
+          ctx.lineTo(18, -111);
+          ctx.lineTo(12, -76);
+          ctx.lineTo(15, 4);
+          ctx.closePath();
+        }, trunkColor, "#765a44", 1.5);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-59, -79);
+          ctx.lineTo(-50, -110);
+          ctx.lineTo(-35, -119);
+          ctx.lineTo(-31, -142);
+          ctx.lineTo(-8, -153);
+          ctx.lineTo(6, -169);
+          ctx.lineTo(27, -151);
+          ctx.lineTo(48, -145);
+          ctx.lineTo(52, -122);
+          ctx.lineTo(65, -105);
+          ctx.lineTo(52, -82);
+          ctx.lineTo(30, -73);
+          ctx.lineTo(4, -78);
+          ctx.lineTo(-19, -70);
+          ctx.closePath();
+        }, leafColor, edgeColor, 2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-38, -111);
+          ctx.lineTo(-29, -131);
+          ctx.lineTo(-11, -138);
+          ctx.lineTo(3, -154);
+          ctx.lineTo(24, -137);
+          ctx.lineTo(43, -132);
+          ctx.lineTo(48, -112);
+          ctx.lineTo(33, -97);
+          ctx.lineTo(6, -103);
+          ctx.lineTo(-14, -94);
+          ctx.closePath();
+        }, "#b2c78c", "#839c6e", 1.5);
+        ctx.restore();
+      }
+
+      function drawGroundPlants() {
+        const tufts = [
+          [52, 430, 0.8], [250, 430, 0.7], [372, 414, 0.55],
+          [712, 414, 0.62], [928, 430, 0.9],
+        ];
+        tufts.forEach(([x, y, scale], index) => {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(scale, scale);
+          paperShape(() => {
+            ctx.beginPath();
+            ctx.moveTo(-19, 3);
+            ctx.lineTo(-29, -24);
+            ctx.lineTo(-8, -12);
+            ctx.lineTo(-2, -37);
+            ctx.lineTo(7, -14);
+            ctx.lineTo(25, -28);
+            ctx.lineTo(16, 2);
+            ctx.closePath();
+          }, index % 2 ? "#87a85f" : "#91ad68", "#607d4f", 1.5);
+          ctx.restore();
+        });
+      }
+
+      function drawTrail() {
+        paperStroke(() => {
+          ctx.beginPath();
+          ctx.moveTo(55, 430);
+          ctx.lineTo(410, 430);
+          ctx.lineTo(490, 400);
+          ctx.lineTo(610, 400);
+          ctx.lineTo(690, 430);
+          ctx.lineTo(900, 430);
+        }, "#d7c08f", 25, "#987f5b");
+        paperStroke(() => {
+          ctx.beginPath();
+          ctx.moveTo(70, 425);
+          ctx.lineTo(400, 425);
+        }, "#ead8ad", 2.2, "#c2a978");
+        paperStroke(() => {
+          ctx.beginPath();
+          ctx.moveTo(700, 425);
+          ctx.lineTo(888, 425);
+        }, "#ead8ad", 2.2, "#c2a978");
+      }
+
+      function drawBridge() {
+        [490, 610].forEach((x) => {
+          paperShape(() => {
+            ctx.beginPath();
+            ctx.moveTo(x - 7, 404);
+            ctx.lineTo(x + 7, 404);
+            ctx.lineTo(x + 10, 492);
+            ctx.lineTo(x - 10, 492);
+            ctx.closePath();
+          }, "#9d704d", "#684e3b", 1.5);
+        });
+
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(390, routeY(390) + 10);
+          ctx.lineTo(710, routeY(710) + 10);
+          ctx.lineTo(710, routeY(710) + 21);
+          ctx.lineTo(390, routeY(390) + 21);
+          ctx.closePath();
+        }, "#865b42", "#5f4437", 2);
+
+        for (let x = 390; x < 710; x += 18) {
+          const leftY = routeY(x);
+          const rightY = routeY(Math.min(x + 17, 710));
+          paperShape(() => {
+            ctx.beginPath();
+            ctx.moveTo(x, leftY);
+            ctx.lineTo(Math.min(x + 17, 710), rightY);
+            ctx.lineTo(Math.min(x + 17, 710), rightY + 11);
+            ctx.lineTo(x, leftY + 11);
+            ctx.closePath();
+          }, x % 36 === 0 ? "#c08b5b" : "#d1a16d", "#805b40", 1.2);
+        }
+      }
+
+      function drawFlower(x, baseY) {
+        paperStroke(() => {
+          ctx.beginPath();
+          ctx.moveTo(x, baseY);
+          ctx.quadraticCurveTo(x + 2, baseY - 19, x, baseY - 39);
+        }, "#6d9454", 4, "#4e7045");
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(x + 1, baseY - 18);
+          ctx.quadraticCurveTo(x + 18, baseY - 30, x + 17, baseY - 18);
+          ctx.quadraticCurveTo(x + 9, baseY - 12, x + 1, baseY - 18);
+          ctx.closePath();
+        }, "#8eae65", "#607d4c", 1.3);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.ellipse(x, baseY - 43, 6, 12, 0, 0, Math.PI * 2);
+        }, "#e9a477", "#a86e58", 1.4);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.ellipse(x, baseY - 43, 6, 12, Math.PI / 2, 0, Math.PI * 2);
+        }, "#f0b37d", "#a86e58", 1.4);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.arc(x, baseY - 43, 5, 0, Math.PI * 2);
+        }, "#e5c365", "#927341", 1.1);
+      }
+
+      function drawSegment(x1, y1, x2, y2, width, color) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / length) * width * 0.5;
+        const ny = (dx / length) * width * 0.5;
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(x1 + nx, y1 + ny);
+          ctx.lineTo(x2 + nx, y2 + ny);
+          ctx.lineTo(x2 - nx, y2 - ny);
+          ctx.lineTo(x1 - nx, y1 - ny);
+          ctx.closePath();
+        }, color, "#824f3b", 1.5);
+      }
+
+      function drawLeg(hipX, phase, gait, color) {
+        const swing = Math.sin(phase) * 0.58 * gait;
+        const footX = hipX + Math.sin(swing) * 34;
+        const footY = -34 + Math.cos(swing) * 34;
+        const kneeX = (hipX + footX) * 0.5 + 3;
+        const kneeY = (-34 + footY) * 0.5 + 3 + Math.max(0, Math.sin(phase)) * 3 * gait;
+        drawSegment(hipX, -34, kneeX, kneeY, 8, color);
+        drawSegment(kneeX, kneeY, footX, footY, 6.5, color);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.arc(kneeX, kneeY, 4.2, 0, Math.PI * 2);
+        }, "#d7804c", "#824f3b", 1.2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(footX - 4, footY - 2);
+          ctx.quadraticCurveTo(footX + 6, footY - 6, footX + 12, footY - 1);
+          ctx.lineTo(footX + 14, footY + 2);
+          ctx.lineTo(footX - 3, footY + 2);
+          ctx.closePath();
+        }, color, "#824f3b", 1.2);
+      }
+
+      function drawFox(x, ground, phase, gait, slope) {
+        const bob = Math.sin(phase * 2) * 2.2 * gait;
+        ctx.save();
+        ctx.translate(x, ground + bob);
+        ctx.rotate(Math.atan(slope));
+
+        ctx.save();
+        ctx.fillStyle = "rgba(62, 66, 45, 0.18)";
+        ctx.beginPath();
+        ctx.ellipse(0, 3, 48, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        drawLeg(-30, phase + Math.PI, gait, "#a85e3d");
+        drawLeg(12, phase, gait, "#b86b43");
+
+        let tailWag = Math.sin(phase * 1.2) * 3 * gait;
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-38, -62);
+          ctx.bezierCurveTo(-68, -94 - tailWag, -108, -88 - tailWag, -91, -60);
+          ctx.bezierCurveTo(-79, -41, -58, -45, -41, -50);
+          ctx.closePath();
+        }, "#c97646", "#824f3b", 2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-86, -68 - tailWag * 0.5);
+          ctx.bezierCurveTo(-77, -83 - tailWag, -62, -84 - tailWag, -55, -78);
+          ctx.bezierCurveTo(-64, -68, -72, -61, -82, -58);
+          ctx.closePath();
+        }, "#f5e8ca", "#aa8f70", 1.3);
+
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-50, -66);
+          ctx.quadraticCurveTo(-40, -85, -8, -82);
+          ctx.lineTo(17, -73);
+          ctx.lineTo(31, -57);
+          ctx.lineTo(20, -40);
+          ctx.lineTo(-21, -37);
+          ctx.lineTo(-48, -48);
+          ctx.closePath();
+        }, "#c87545", "#824f3b", 2.2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-12, -67);
+          ctx.quadraticCurveTo(9, -74, 25, -57);
+          ctx.lineTo(19, -43);
+          ctx.lineTo(-7, -43);
+          ctx.closePath();
+        }, "#f1dfbd", "#aa8f70", 1.2);
+
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(1, -74);
+          ctx.lineTo(7, -96);
+          ctx.lineTo(24, -83);
+          ctx.lineTo(36, -103);
+          ctx.lineTo(45, -84);
+          ctx.lineTo(58, -76);
+          ctx.lineTo(49, -59);
+          ctx.lineTo(31, -54);
+          ctx.lineTo(11, -59);
+          ctx.closePath();
+        }, "#d37d49", "#824f3b", 2);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(41, -68);
+          ctx.quadraticCurveTo(58, -72, 66, -65);
+          ctx.lineTo(58, -57);
+          ctx.lineTo(42, -59);
+          ctx.closePath();
+        }, "#f5e9d0", "#aa8f70", 1.4);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(10, -85);
+          ctx.lineTo(12, -94);
+          ctx.lineTo(20, -87);
+          ctx.closePath();
+        }, "#9e5440", "#824f3b", 1);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.arc(43, -78, 3.2, 0, Math.PI * 2);
+        }, "#332f2b", "#332f2b", 0.8);
+        paperShape(() => {
+          ctx.beginPath();
+          ctx.arc(27, -75, 2.3, 0, Math.PI * 2);
+        }, "#302d29", "#302d29", 0.7);
+
+        drawLeg(-30, phase + Math.PI + 0.45, gait, "#c97748");
+        drawLeg(12, phase + 0.45, gait, "#d27b48");
+        ctx.restore();
+      }
+
+      function drawForegroundLeaves() {
+        [[26, 505, 1], [936, 508, -1]].forEach(([x, y, direction]) => {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(direction, 1);
+          paperShape(() => {
+            ctx.beginPath();
+            ctx.moveTo(0, 72);
+            ctx.quadraticCurveTo(1, 16, -24, -2);
+            ctx.quadraticCurveTo(6, 2, 11, 34);
+            ctx.quadraticCurveTo(17, -6, 39, -14);
+            ctx.quadraticCurveTo(37, 29, 0, 72);
+            ctx.closePath();
+          }, "#557d54", "#3f6546", 2);
+          ctx.restore();
+        });
+      }
+
+      function drawScene(elapsed) {
+        drawPaperWash();
+        drawDistantForest();
+        drawStream();
+        drawBanks();
+        drawTree(105, 430, 0.86, "#547f5b", "#3d654b", "#8b684b");
+        drawTree(315, 430, 0.68, "#668d61", "#476c4e", "#8d694a");
+        drawTree(736, 430, 0.75, "#5b855d", "#416b4d", "#8b684b");
+        drawTree(916, 430, 0.95, "#527d59", "#3c6449", "#8d694a");
+        drawGroundPlants();
+        drawTrail();
+        drawBridge();
+        drawFlower(FLOWER_X, 430);
+
+        const walkProgress = Math.max(0, Math.min(1, elapsed / WALK_DURATION));
+        const eased = walkProgress * walkProgress * (3 - 2 * walkProgress);
+        const foxX = START_X + (STOP_X - START_X) * eased;
+        const gaitIn = Math.min(1, elapsed / 0.55);
+        const gaitOut = Math.min(1, Math.max(0, (WALK_DURATION - elapsed) / 0.65));
+        const gait = elapsed < WALK_DURATION ? Math.min(gaitIn, gaitOut) : 0;
+        drawFox(foxX, routeY(foxX), elapsed * 7.4, gait, routeSlope(foxX));
+        drawForegroundLeaves();
+      }
+
+      function resizeCanvas() {
+        const bounds = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(bounds.width * ratio));
+        canvas.height = Math.max(1, Math.round(bounds.height * ratio));
+        ctx.setTransform(canvas.width / WIDTH, 0, 0, canvas.height / HEIGHT, 0, 0);
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      let startTime = null;
+      function animate(now) {
+        if (startTime === null) startTime = now;
+        const elapsed = Math.min(DURATION, (now - startTime) / 1000);
+        drawScene(elapsed);
+        if (elapsed < DURATION) requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>

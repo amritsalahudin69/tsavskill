@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A procedural Retro PS2-inspired 3D garage animation.">
+  <title>Retro Garage</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #10131d;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% 35%, #303647 0, #151925 58%, #0b0d13 100%);
+    }
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    main {
+      position: relative;
+      width: min(96vw, 82vh, 960px);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 2px solid #87909a;
+      background: #191d27;
+      box-shadow: 0 22px 64px rgb(0 0 0 / 55%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: auto;
+      padding: 1rem;
+      color: #ffe4e4;
+      background: rgb(70 12 18 / 94%);
+      font: 14px/1.5 ui-monospace, monospace;
+      white-space: pre-wrap;
+    }
+
+    #error.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="Retro 3D garage scene">
+    <canvas id="scene" aria-label="Sports car entering a garage with a rotating fan"></canvas>
+    <output id="error" role="alert" aria-live="assertive"></output>
+  </main>
+  <script type="module">
+    const canvas = document.querySelector("#scene");
+    const errorPanel = document.querySelector("#error");
+
+    function reportError(error) {
+      console.error("Retro garage initialization failed:", error);
+      errorPanel.textContent = `Scene initialization failed:\n${error?.message ?? error}`;
+      errorPanel.classList.add("visible");
+    }
+
+    try {
+      const THREE = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"
+      );
+      initializeScene(THREE);
+    } catch (error) {
+      reportError(error);
+    }
+
+    function initializeScene(THREE) {
+      // These are fixture-only assumptions, not scene-production defaults.
+      const animationDuration = 8;
+      const driveDuration = 5.5;
+      const startZ = 7.1;
+      const endZ = 1.3;
+      const wheelRadius = 0.34;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1b2230);
+      scene.fog = new THREE.Fog(0x1b2230, 25, 48);
+
+      const camera = new THREE.PerspectiveCamera(43, 4 / 3, 0.1, 100);
+      camera.position.set(13, 10, 20);
+      camera.lookAt(0, 2.05, -0.5);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+
+      scene.add(new THREE.HemisphereLight(0xb7c4d6, 0x40333a, 1.65));
+
+      const keyLight = new THREE.DirectionalLight(0xffd18a, 2.9);
+      keyLight.position.set(-8, 12, 8);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.left = -13;
+      keyLight.shadow.camera.right = 13;
+      keyLight.shadow.camera.top = 13;
+      keyLight.shadow.camera.bottom = -13;
+      keyLight.shadow.normalBias = 0.035;
+      scene.add(keyLight);
+
+      const coolFill = new THREE.DirectionalLight(0x729bd0, 1.05);
+      coolFill.position.set(9, 7, -9);
+      scene.add(coolFill);
+
+      const materials = {
+        concrete: new THREE.MeshStandardMaterial({
+          color: 0xc3c5c6,
+          map: createFloorTexture(THREE),
+          roughness: 0.94,
+          flatShading: true
+        }),
+        wall: new THREE.MeshStandardMaterial({ color: 0x5d626c, roughness: 0.92, flatShading: true }),
+        wallInset: new THREE.MeshStandardMaterial({ color: 0x333a48, roughness: 0.88 }),
+        beam: new THREE.MeshStandardMaterial({ color: 0x303743, roughness: 0.82, flatShading: true }),
+        cabinetBlue: new THREE.MeshStandardMaterial({ color: 0x315b81, roughness: 0.58, metalness: 0.18, flatShading: true }),
+        cabinetRed: new THREE.MeshStandardMaterial({ color: 0x934538, roughness: 0.6, metalness: 0.12, flatShading: true }),
+        darkMetal: new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.48, metalness: 0.55 }),
+        chrome: new THREE.MeshStandardMaterial({ color: 0xaab2bb, roughness: 0.3, metalness: 0.72 }),
+        carBody: new THREE.MeshStandardMaterial({ color: 0xb94437, roughness: 0.42, metalness: 0.12, flatShading: true }),
+        carAccent: new THREE.MeshStandardMaterial({ color: 0x762d2d, roughness: 0.52, flatShading: true }),
+        glass: new THREE.MeshStandardMaterial({
+          color: 0x233d55,
+          roughness: 0.24,
+          metalness: 0.24,
+          transparent: true,
+          opacity: 0.84
+        }),
+        tire: new THREE.MeshStandardMaterial({ color: 0x202226, roughness: 0.93, flatShading: true }),
+        lamp: new THREE.MeshStandardMaterial({
+          color: 0xf6d889,
+          emissive: 0xf08d38,
+          emissiveIntensity: 1.15,
+          roughness: 0.4
+        }),
+        fanBlade: new THREE.MeshStandardMaterial({ color: 0xb4b8bc, roughness: 0.56, metalness: 0.32, flatShading: true })
+      };
+
+      function createFloorTexture(three) {
+        const textureCanvas = document.createElement("canvas");
+        textureCanvas.width = 64;
+        textureCanvas.height = 64;
+        const context = textureCanvas.getContext("2d");
+        context.fillStyle = "#777b7e";
+        context.fillRect(0, 0, 64, 64);
+        for (let y = 0; y < 64; y += 8) {
+          for (let x = 0; x < 64; x += 8) {
+            const shade = 102 + ((x * 13 + y * 7) % 28);
+            context.fillStyle = `rgb(${shade}, ${shade + 1}, ${shade + 3})`;
+            context.fillRect(x, y, 7, 7);
+          }
+        }
+        for (let i = 0; i < 36; i += 1) {
+          const x = (i * 17 + 9) % 64;
+          const y = (i * 29 + 5) % 64;
+          context.fillStyle = i % 2 === 0 ? "rgba(35, 38, 42, .24)" : "rgba(205, 190, 160, .18)";
+          context.fillRect(x, y, 2 + (i % 3), 1 + (i % 2));
+        }
+        const texture = new three.CanvasTexture(textureCanvas);
+        texture.wrapS = three.RepeatWrapping;
+        texture.wrapT = three.RepeatWrapping;
+        texture.repeat.set(5, 4);
+        texture.magFilter = three.NearestFilter;
+        texture.minFilter = three.NearestMipmapNearestFilter;
+        texture.colorSpace = three.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function addMesh(geometry, material, parent = scene, castShadow = true, receiveShadow = true) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = receiveShadow;
+        parent.add(mesh);
+        return mesh;
+      }
+
+      function addBox(parent, material, size, position, castShadow = true) {
+        const mesh = addMesh(new THREE.BoxGeometry(...size), material, parent, castShadow);
+        mesh.position.set(...position);
+        return mesh;
+      }
+
+      const garage = new THREE.Group();
+      scene.add(garage);
+
+      addBox(garage, materials.concrete, [16, 0.28, 14], [0, -0.14, -0.8], false);
+      addBox(garage, materials.wall, [16, 5.6, 0.35], [0, 2.8, -7.65]);
+      addBox(garage, materials.wall, [0.35, 5.3, 12.5], [-7.85, 2.65, -1.15]);
+      addBox(garage, materials.wall, [0.35, 5.3, 12.5], [7.85, 2.65, -1.15]);
+      addBox(garage, materials.beam, [16, 0.35, 0.45], [0, 5.55, -4.4]);
+      addBox(garage, materials.beam, [16, 0.35, 0.45], [0, 5.55, -0.2]);
+      addBox(garage, materials.beam, [16, 0.35, 0.45], [0, 5.55, 3.5]);
+
+      const rearInset = addBox(garage, materials.wallInset, [8.8, 2.6, 0.06], [-3.35, 2.65, -7.44], false);
+      rearInset.material = materials.wallInset;
+
+      function makeCabinet(x, z, material) {
+        const cabinet = new THREE.Group();
+        cabinet.position.set(x, 0, z);
+        garage.add(cabinet);
+        addBox(cabinet, material, [1.35, 1.9, 0.92], [0, 0.95, 0]);
+        addBox(cabinet, materials.darkMetal, [1.43, 0.12, 1.0], [0, 1.93, 0]);
+        for (let row = 0; row < 4; row += 1) {
+          const y = 0.38 + row * 0.37;
+          addBox(cabinet, materials.darkMetal, [1.12, 0.045, 0.045], [0, y, 0.49], false);
+          const handle = addMesh(
+            new THREE.CylinderGeometry(0.035, 0.035, 0.2, 8),
+            materials.chrome,
+            cabinet,
+            false,
+            false
+          );
+          handle.rotation.z = Math.PI / 2;
+          handle.position.set(0, y + 0.09, 0.54);
+        }
+        return cabinet;
+      }
+
+      makeCabinet(-6.55, -2.0, materials.cabinetBlue);
+      makeCabinet(6.5, -2.2, materials.cabinetRed);
+
+      const bench = addBox(garage, materials.beam, [2.4, 0.18, 1.05], [-5.45, 1.22, -4.6]);
+      bench.material = materials.darkMetal;
+      for (const x of [-6.25, -4.65]) {
+        addBox(garage, materials.darkMetal, [0.14, 1.22, 0.14], [x, 0.61, -4.6]);
+      }
+      addBox(garage, materials.cabinetBlue, [0.22, 1.5, 0.18], [-5.1, 2.05, -7.35]);
+      addBox(garage, materials.chrome, [0.08, 0.9, 0.12], [-5.1, 2.1, -7.23]);
+      addBox(garage, materials.cabinetRed, [0.18, 1.1, 0.16], [-4.6, 1.85, -7.34]);
+
+      function makeWorkLight(x, z, color, intensity) {
+        const fixture = addBox(garage, materials.darkMetal, [2.2, 0.14, 0.32], [x, 5.24, z], false);
+        fixture.material = materials.darkMetal;
+        const lensMaterial = new THREE.MeshBasicMaterial({ color });
+        addBox(garage, lensMaterial, [1.86, 0.035, 0.22], [x, 5.15, z], false);
+        const light = new THREE.PointLight(color, intensity, 12, 2);
+        light.position.set(x, 4.9, z);
+        light.castShadow = false;
+        garage.add(light);
+      }
+
+      makeWorkLight(-3.2, -2.9, 0xffc36f, 35);
+      makeWorkLight(2.5, 1.1, 0x8dbbff, 24);
+
+      const fan = new THREE.Group();
+      fan.position.set(4.75, 4.05, -7.35);
+      garage.add(fan);
+      const fanHousing = addMesh(
+        new THREE.CylinderGeometry(0.94, 0.94, 0.3, 12),
+        materials.darkMetal,
+        fan,
+        true,
+        false
+      );
+      fanHousing.rotation.x = Math.PI / 2;
+      const fanRim = addMesh(
+        new THREE.TorusGeometry(0.82, 0.08, 6, 12),
+        materials.chrome,
+        fan,
+        true,
+        false
+      );
+      fanRim.position.z = 0.19;
+      const rotor = new THREE.Group();
+      rotor.position.z = 0.22;
+      fan.add(rotor);
+      for (let bladeIndex = 0; bladeIndex < 4; bladeIndex += 1) {
+        const angle = bladeIndex * Math.PI / 2;
+        const bladePivot = new THREE.Group();
+        bladePivot.rotation.z = angle;
+        rotor.add(bladePivot);
+        const blade = addMesh(
+          new THREE.BoxGeometry(0.28, 0.68, 0.09),
+          materials.fanBlade,
+          bladePivot
+        );
+        blade.position.y = 0.36;
+      }
+      const hub = addMesh(
+        new THREE.CylinderGeometry(0.19, 0.19, 0.22, 10),
+        materials.chrome,
+        rotor,
+        true,
+        false
+      );
+      hub.rotation.x = Math.PI / 2;
+
+      const car = new THREE.Group();
+      car.position.set(0, 0, startZ);
+      scene.add(car);
+      addBox(car, materials.carBody, [2.05, 0.48, 4.25], [0, 0.7, 0]);
+      addBox(car, materials.carAccent, [1.9, 0.22, 1.18], [0, 0.56, 1.48]);
+      addBox(car, materials.carBody, [1.9, 0.2, 1.05], [0, 0.86, -1.55]);
+      addBox(car, materials.carBody, [1.78, 0.2, 0.68], [0, 0.94, 1.83]);
+      addBox(car, materials.carBody, [1.48, 0.66, 1.62], [0, 1.25, 0.18]);
+      addBox(car, materials.glass, [1.36, 0.49, 0.06], [0, 1.3, -0.64], false);
+      addBox(car, materials.glass, [1.36, 0.49, 0.06], [0, 1.3, 0.98], false);
+      addBox(car, materials.darkMetal, [0.055, 0.59, 1.54], [0, 1.25, 0.18], false);
+
+      const wheelSpinners = [];
+      for (const x of [-1.06, 1.06]) {
+        for (const z of [-1.35, 1.35]) {
+          const spinner = new THREE.Group();
+          spinner.position.set(x, wheelRadius, z);
+          car.add(spinner);
+          const tire = addMesh(
+            new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.28, 10),
+            materials.tire,
+            spinner
+          );
+          tire.rotation.z = Math.PI / 2;
+          const rim = addMesh(
+            new THREE.CylinderGeometry(0.19, 0.19, 0.3, 8),
+            materials.chrome,
+            spinner
+          );
+          rim.rotation.z = Math.PI / 2;
+          for (const side of [-1, 1]) {
+            for (let spokeIndex = 0; spokeIndex < 3; spokeIndex += 1) {
+              const spokeAngle = spokeIndex * (Math.PI * 2 / 3);
+              const spoke = addMesh(
+                new THREE.BoxGeometry(0.025, 0.13, 0.045),
+                materials.carAccent,
+                spinner,
+                false,
+                false
+              );
+              spoke.position.set(
+                side * 0.16,
+                Math.cos(spokeAngle) * 0.08,
+                Math.sin(spokeAngle) * 0.08
+              );
+              spoke.rotation.x = spokeAngle;
+            }
+          }
+          wheelSpinners.push(spinner);
+        }
+      }
+
+      for (const x of [-0.66, 0.66]) {
+        const headlight = addBox(car, materials.lamp, [0.38, 0.12, 0.08], [x, 0.81, -2.15], false);
+        headlight.material = new THREE.MeshStandardMaterial({
+          color: 0xffe6a3,
+          emissive: 0xffb94f,
+          emissiveIntensity: 0.8
+        });
+        addBox(car, materials.cabinetRed, [0.38, 0.12, 0.08], [x, 0.79, 2.15], false);
+      }
+
+      const startTime = performance.now();
+      const driveDistance = startZ - endZ;
+
+      function animate(now) {
+        const elapsed = Math.min((now - startTime) / 1000, animationDuration);
+        const driveProgress = Math.min(elapsed / driveDuration, 1);
+        const easedProgress = driveProgress * driveProgress * (3 - 2 * driveProgress);
+        const distance = driveDistance * easedProgress;
+        car.position.z = startZ - distance;
+        for (const wheel of wheelSpinners) {
+          wheel.rotation.x = distance / wheelRadius;
+        }
+        rotor.rotation.z = elapsed * 3.2;
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      function resize() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width === 0 || height === 0) return;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>

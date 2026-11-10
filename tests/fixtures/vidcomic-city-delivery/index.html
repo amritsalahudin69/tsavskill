@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comic Book City Delivery</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #23253b;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #23253b;
+    }
+
+    main {
+      width: min(96vw, 960px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      border: 5px solid #131522;
+      background: #f3d9a1;
+    }
+
+    #init-error {
+      margin: 0;
+      padding: 0.75rem;
+      color: #fff;
+      background: #8b2f36;
+    }
+
+    #init-error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" width="480" height="270" role="img"
+      aria-label="A comic-book bicycle courier rides through a city, turns onto a side street, and stops beside a storefront.">
+      Canvas 2D is required to display this scene.
+    </canvas>
+    <p id="init-error" role="alert" hidden></p>
+  </main>
+  <script>
+    "use strict";
+
+    const WIDTH = 480;
+    const HEIGHT = 270;
+    const DURATION_MS = 9000;
+    const ROAD_MAIN_TOP = 166;
+    const ROAD_MAIN_BOTTOM = HEIGHT;
+    const ROAD_SIDE_LEFT = 178;
+    const ROAD_SIDE_RIGHT = 264;
+    const ROAD_SIDE_TOP = 88;
+    const ROAD_SIDE_BOTTOM = ROAD_MAIN_TOP;
+    const TURN_CENTER_X = 200;
+    const TURN_CENTER_Y = 164;
+    const TURN_RADIUS = 42;
+    const ROAD_CENTER_Y = TURN_CENTER_Y + TURN_RADIUS;
+    const SIDE_STREET_END_Y = 118;
+    const WHEEL_RADIUS = 10;
+    const STOREFRONT_X = 270;
+    const STOREFRONT_ENTRY_TOP = 104;
+    const STOREFRONT_ENTRY_BOTTOM = 140;
+    const OUTLINE = "#191725";
+    const COLORS = {
+      paper: "#f3d9a1",
+      sky: "#88c7ce",
+      skyLight: "#d5e8d0",
+      rooftop: "#f49b69",
+      brick: "#e56e55",
+      brickLight: "#f49b69",
+      violet: "#66608c",
+      violetDark: "#454468",
+      cream: "#ffe7ad",
+      ink: "#191725",
+      road: "#434b68",
+      roadLight: "#68728b",
+      curb: "#e7b66f",
+      store: "#f1c96e",
+      awning: "#e2574e",
+      awningLight: "#fff0ce",
+      glass: "#68b9c1",
+      glassLight: "#a9e0d9",
+      bicycle: "#20374c",
+      bicycleLight: "#4cb8b5",
+      courier: "#df5148",
+      courierLight: "#f27b55",
+      skin: "#f3bd83",
+      helmet: "#f1c343",
+      shadow: "#292940"
+    };
+
+    const canvas = document.getElementById("scene");
+    const errorPanel = document.getElementById("init-error");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      errorPanel.textContent = "Canvas 2D could not be initialized in this browser.";
+      errorPanel.hidden = false;
+    } else {
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      const startTime = performance.now();
+
+      function rect(color, x, y, width, height) {
+        context.fillStyle = color;
+        context.fillRect(x, y, width, height);
+      }
+
+      function outlinedRect(fill, x, y, width, height, lineWidth = 3) {
+        rect(fill, x, y, width, height);
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = lineWidth;
+        context.strokeRect(x, y, width, height);
+      }
+
+      function line(color, width, x1, y1, x2, y2) {
+        context.strokeStyle = color;
+        context.lineWidth = width;
+        context.beginPath();
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        context.stroke();
+      }
+
+      function halftone(x, y, columns, rows, spacing, radius, color) {
+        context.fillStyle = color;
+        for (let row = 0; row < rows; row += 1) {
+          for (let column = 0; column < columns; column += 1) {
+            context.beginPath();
+            context.arc(x + column * spacing, y + row * spacing, radius, 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+      }
+
+      function drawBuilding(x, y, width, height, fill, windowFill) {
+        outlinedRect(fill, x, y, width, height, 4);
+        halftone(x + 8, y + 8, Math.max(3, Math.floor(width / 12)), 4, 8, 1.1,
+          "rgba(25, 23, 37, 0.24)");
+        outlinedRect(windowFill, x + 12, y + 14, Math.min(20, width - 24), 15, 2);
+        outlinedRect(COLORS.violetDark, x + width - 29, y + height - 28, 17, 16, 2);
+        rect(COLORS.rooftop, x + width - 25, y + height - 24, 9, 8);
+      }
+
+      function drawStorefront() {
+        outlinedRect(COLORS.store, STOREFRONT_X, 50, WIDTH - STOREFRONT_X - 7,
+          ROAD_MAIN_TOP - 54, 4);
+        halftone(STOREFRONT_X + 31, 60, 17, 8, 9, 1.2, "rgba(25, 23, 37, 0.25)");
+        outlinedRect(COLORS.violetDark, STOREFRONT_X + 50, 72, 81, 52, 3);
+        outlinedRect(COLORS.rooftop, STOREFRONT_X + 59, 81, 63, 34, 2);
+        outlinedRect(COLORS.cream, STOREFRONT_X + 151, 68, 34, 29, 2);
+        rect(COLORS.awning, STOREFRONT_X + 159, 76, 17, 12);
+        rect(COLORS.glassLight, STOREFRONT_X + 164, 79, 7, 6);
+
+        rect(COLORS.curb, ROAD_SIDE_RIGHT, STOREFRONT_ENTRY_TOP,
+          STOREFRONT_X - ROAD_SIDE_RIGHT, STOREFRONT_ENTRY_BOTTOM - STOREFRONT_ENTRY_TOP);
+        rect(COLORS.cream, ROAD_SIDE_RIGHT + 1, STOREFRONT_ENTRY_TOP + 3,
+          STOREFRONT_X - ROAD_SIDE_RIGHT - 2,
+          STOREFRONT_ENTRY_BOTTOM - STOREFRONT_ENTRY_TOP - 6);
+
+        outlinedRect(COLORS.glass, STOREFRONT_X + 2, 70, 18, 27, 2);
+        line(COLORS.glassLight, 2, STOREFRONT_X + 5, 75, STOREFRONT_X + 15, 75);
+        outlinedRect(COLORS.cream, STOREFRONT_X + 2, STOREFRONT_ENTRY_TOP + 4, 19, 27, 3);
+        rect(COLORS.awning, STOREFRONT_X - 8, STOREFRONT_ENTRY_TOP, 10,
+          STOREFRONT_ENTRY_BOTTOM - STOREFRONT_ENTRY_TOP);
+        for (let y = STOREFRONT_ENTRY_TOP + 4; y < STOREFRONT_ENTRY_BOTTOM; y += 10) {
+          rect(COLORS.awningLight, STOREFRONT_X - 8, y, 10, 4);
+        }
+        rect(COLORS.ink, STOREFRONT_X + 15, STOREFRONT_ENTRY_TOP + 16, 3, 3);
+      }
+
+      function drawStreet() {
+        rect(COLORS.paper, 0, 0, WIDTH, HEIGHT);
+        rect(COLORS.sky, 0, 0, WIDTH, HEIGHT);
+        halftone(18, 12, 18, 5, 9, 1.4, "rgba(69, 68, 104, 0.35)");
+
+        drawBuilding(8, 24, 76, 128, COLORS.brick, COLORS.cream);
+        drawBuilding(92, 38, 76, 112, COLORS.violet, COLORS.skyLight);
+
+        context.beginPath();
+        context.moveTo(0, ROAD_MAIN_TOP);
+        context.lineTo(ROAD_SIDE_LEFT, ROAD_SIDE_BOTTOM);
+        context.lineTo(ROAD_SIDE_LEFT, ROAD_SIDE_TOP);
+        context.lineTo(ROAD_SIDE_RIGHT, ROAD_SIDE_TOP);
+        context.lineTo(ROAD_SIDE_RIGHT, ROAD_SIDE_BOTTOM);
+        context.lineTo(WIDTH, ROAD_MAIN_TOP);
+        context.lineTo(WIDTH, ROAD_MAIN_BOTTOM);
+        context.lineTo(0, ROAD_MAIN_BOTTOM);
+        context.closePath();
+        context.fillStyle = COLORS.road;
+        context.fill();
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = 5;
+        context.stroke();
+
+        context.save();
+        context.strokeStyle = COLORS.curb;
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(0, ROAD_MAIN_TOP + 6);
+        context.lineTo(ROAD_SIDE_LEFT + 6, ROAD_MAIN_TOP + 6);
+        context.lineTo(ROAD_SIDE_LEFT + 6, ROAD_SIDE_TOP + 7);
+        context.moveTo(ROAD_SIDE_RIGHT - 6, ROAD_SIDE_TOP + 7);
+        context.lineTo(ROAD_SIDE_RIGHT - 6, ROAD_MAIN_TOP + 6);
+        context.lineTo(WIDTH, ROAD_MAIN_TOP + 6);
+        context.stroke();
+
+        context.setLineDash([9, 11]);
+        context.strokeStyle = COLORS.cream;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(18, ROAD_CENTER_Y);
+        context.lineTo(TURN_CENTER_X, ROAD_CENTER_Y);
+        context.arc(TURN_CENTER_X, TURN_CENTER_Y, TURN_RADIUS,
+          Math.PI / 2, 0, true);
+        context.lineTo(TURN_CENTER_X + TURN_RADIUS, SIDE_STREET_END_Y - 9);
+        context.stroke();
+        context.restore();
+
+        for (let x = ROAD_SIDE_LEFT + 8; x < ROAD_SIDE_RIGHT - 8; x += 16) {
+          rect(COLORS.cream, x, ROAD_MAIN_TOP + 8, 9, 4);
+        }
+
+        drawStorefront();
+        halftone(15, 235, 21, 4, 9, 1.1, "rgba(243, 217, 161, 0.42)");
+      }
+
+      function ease(value) {
+        return value * value * (3 - 2 * value);
+      }
+
+      function getCourierState(elapsedMs) {
+        const time = Math.min(Math.max(elapsedMs, 0), DURATION_MS) / 1000;
+        const streetDistance = TURN_CENTER_X - 50;
+        const turnDistance = TURN_RADIUS * Math.PI / 2;
+        const sideStreetDistance = TURN_CENTER_Y - SIDE_STREET_END_Y;
+        const streetEnd = 3.6;
+        const turnEnd = 5.2;
+        const sideStreetEnd = 6.9;
+        let x;
+        let y;
+        let heading;
+        let distance;
+
+        if (time < streetEnd) {
+          const progress = ease(time / streetEnd);
+          x = 50 + streetDistance * progress;
+          y = ROAD_CENTER_Y;
+          heading = 0;
+          distance = streetDistance * progress;
+        } else if (time < turnEnd) {
+          const progress = ease((time - streetEnd) / (turnEnd - streetEnd));
+          const angle = progress * Math.PI / 2;
+          x = TURN_CENTER_X + TURN_RADIUS * Math.sin(angle);
+          y = TURN_CENTER_Y + TURN_RADIUS * Math.cos(angle);
+          heading = -angle;
+          distance = streetDistance + TURN_RADIUS * angle;
+        } else if (time < sideStreetEnd) {
+          const progress = ease((time - turnEnd) / (sideStreetEnd - turnEnd));
+          x = TURN_CENTER_X + TURN_RADIUS;
+          y = TURN_CENTER_Y - sideStreetDistance * progress;
+          heading = -Math.PI / 2;
+          distance = streetDistance + turnDistance + sideStreetDistance * progress;
+        } else {
+          x = TURN_CENTER_X + TURN_RADIUS;
+          y = SIDE_STREET_END_Y;
+          heading = -Math.PI / 2;
+          distance = streetDistance + turnDistance + sideStreetDistance;
+        }
+
+        return {
+          x,
+          y,
+          heading,
+          distance,
+          wheelAngle: distance / WHEEL_RADIUS,
+          moving: time < sideStreetEnd
+        };
+      }
+
+      function drawWheel(x, y, angle) {
+        context.save();
+        context.translate(x, y);
+        context.lineCap = "round";
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = 8;
+        context.beginPath();
+        context.moveTo(-8, 0);
+        context.lineTo(8, 0);
+        context.stroke();
+
+        context.strokeStyle = COLORS.bicycleLight;
+        context.lineWidth = 5;
+        context.beginPath();
+        context.moveTo(-7, 0);
+        context.lineTo(7, 0);
+        context.stroke();
+
+        context.beginPath();
+        context.ellipse(0, 0, 7.5, 2.5, 0, 0, Math.PI * 2);
+        context.clip();
+        const treadOffset = (angle * WHEEL_RADIUS) % 6;
+        for (let treadX = -10 + treadOffset; treadX <= 10; treadX += 6) {
+          line(COLORS.ink, 1, treadX, -2, treadX, 2);
+        }
+        context.restore();
+      }
+
+      function drawCourier(state) {
+        context.save();
+        context.translate(state.x, state.y);
+        context.rotate(state.heading);
+        context.lineJoin = "round";
+        context.lineCap = "round";
+
+        context.fillStyle = COLORS.shadow;
+        context.beginPath();
+        context.ellipse(0, 0, 30, 16, 0, 0, Math.PI * 2);
+        context.fill();
+
+        drawWheel(-20, 0, state.wheelAngle);
+        drawWheel(20, 0, state.wheelAngle);
+
+        line(OUTLINE, 5, -20, 0, -10, -7);
+        line(OUTLINE, 5, -10, -7, 0, 0);
+        line(OUTLINE, 5, 0, 0, -20, 0);
+        line(OUTLINE, 5, -10, -7, 12, -7);
+        line(OUTLINE, 5, 12, -7, 0, 0);
+        line(OUTLINE, 5, 12, -7, 20, 0);
+        line(COLORS.bicycleLight, 2.5, -20, 0, -10, -7);
+        line(COLORS.bicycleLight, 2.5, -10, -7, 0, 0);
+        line(COLORS.bicycleLight, 2.5, 0, 0, -20, 0);
+        line(COLORS.bicycleLight, 2.5, -10, -7, 12, -7);
+        line(COLORS.bicycleLight, 2.5, 12, -7, 0, 0);
+        line(COLORS.bicycleLight, 2.5, 12, -7, 20, 0);
+        line(OUTLINE, 4, 12, -7, 14, 0);
+        line(COLORS.bicycleLight, 2, 12, -7, 14, 0);
+        line(OUTLINE, 4, 14, -6, 14, 6);
+        line(COLORS.bicycleLight, 2, 14, -6, 14, 6);
+        line(OUTLINE, 4, -10, -11, -10, -3);
+        line(COLORS.bicycleLight, 2, -10, -11, -10, -3);
+        context.fillStyle = COLORS.bicycle;
+        context.beginPath();
+        context.arc(0, 0, 3, 0, Math.PI * 2);
+        context.fill();
+        line(OUTLINE, 3, -2, -3, 2, 3);
+        line(COLORS.bicycleLight, 1.5, -2, -3, 2, 3);
+        line(OUTLINE, 3, -4, -2, 0, -4);
+        line(OUTLINE, 3, 0, 4, 4, 2);
+
+        context.fillStyle = COLORS.courier;
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.ellipse(-1, 0, 8, 6, 0, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        line(COLORS.courierLight, 2, -5, -3, 3, -3);
+
+        for (const side of [-1, 1]) {
+          line(OUTLINE, 4, 3, side * 3, 14, side * 5);
+          line(COLORS.skin, 2, 3, side * 3, 14, side * 5);
+          line(OUTLINE, 4, -3, side * 4, -1, side * 7);
+          line(COLORS.courierLight, 2, -3, side * 4, -1, side * 7);
+        }
+
+        context.fillStyle = COLORS.skin;
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(8, 0, 6, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        context.fillStyle = COLORS.helmet;
+        context.beginPath();
+        context.arc(8, 0, 4, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        line(COLORS.ink, 2, 10, -2, 12, -2);
+        context.restore();
+      }
+
+      function drawMotionLines(state, elapsedMs) {
+        if (!state.moving) {
+          return;
+        }
+
+        const flicker = Math.floor(elapsedMs / 90) % 2 === 0;
+        const lineColor = flicker ? COLORS.cream : COLORS.awningLight;
+        const directionX = Math.cos(state.heading);
+        const directionY = Math.sin(state.heading);
+        const normalX = -directionY;
+        const normalY = directionX;
+        const trailX = state.x - directionX * 55;
+        const trailY = state.y - directionY * 55;
+
+        for (const offset of [-8, 8]) {
+          line(lineColor, 2,
+            trailX + normalX * offset,
+            trailY + normalY * offset,
+            trailX + directionX * 24 + normalX * offset,
+            trailY + directionY * 24 + normalY * offset);
+        }
+      }
+
+      function drawPanelFrame() {
+        context.strokeStyle = OUTLINE;
+        context.lineWidth = 5;
+        context.strokeRect(3, 3, WIDTH - 6, HEIGHT - 6);
+      }
+
+      function drawScene(elapsedMs) {
+        drawStreet();
+        const state = getCourierState(elapsedMs);
+        drawMotionLines(state, elapsedMs);
+        drawCourier(state);
+        drawPanelFrame();
+      }
+
+      function frame(now) {
+        const elapsedMs = Math.min(Math.max(now - startTime, 0), DURATION_MS);
+        drawScene(elapsedMs);
+        if (elapsedMs < DURATION_MS) {
+          requestAnimationFrame(frame);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+  </script>
+</body>
+</html>

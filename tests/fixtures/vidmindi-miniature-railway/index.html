@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A miniature mountain railway diorama with an animated train.">
+  <title>Mountain Railway Diorama</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #d7d2c8;
+      color: #332c25;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background:
+        radial-gradient(ellipse at 50% 35%, #eee9df 0, #d7d2c8 72%);
+    }
+
+    main {
+      position: relative;
+      width: min(94vw, 112vh, 960px);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 10px solid #554638;
+      border-radius: 12px;
+      background: #e4e1d8;
+      box-shadow:
+        0 24px 54px rgb(47 36 25 / 28%),
+        inset 0 0 0 2px rgb(255 255 255 / 24%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #error {
+      position: absolute;
+      inset: 1rem;
+      align-content: center;
+      padding: 1.25rem;
+      border: 1px solid #8e3024;
+      border-radius: 8px;
+      background: rgb(255 245 238 / 96%);
+      color: #591d16;
+      font: 600 0.95rem/1.5 system-ui, sans-serif;
+      white-space: pre-wrap;
+    }
+
+    #error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="Miniature mountain railway diorama">
+    <canvas id="scene" aria-label="Three-dimensional mountain railway with a moving train"></canvas>
+    <div id="error" role="alert" hidden></div>
+  </main>
+
+  <script type="module">
+    // Test-fixture assumptions only; these are not capability defaults.
+    const TEST_DURATION_SECONDS = 8;
+    const LOOP_ANIMATION = false;
+    const errorPanel = document.querySelector("#error");
+    const canvas = document.querySelector("#scene");
+
+    function showError(error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errorPanel.textContent = `Scene initialization failed:\n${message}`;
+      errorPanel.hidden = false;
+      console.error("Mountain railway scene initialization failed:", error);
+    }
+
+    async function bootstrap() {
+      try {
+        const THREE = await import("https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js");
+        initializeScene(THREE);
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    bootstrap();
+
+    function initializeScene(THREE) {
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xe4e1d8);
+      scene.fog = new THREE.Fog(0xe4e1d8, 39, 82);
+
+      const camera = new THREE.PerspectiveCamera(38, 4 / 3, 0.1, 120);
+      camera.position.set(27, 25, 30);
+      camera.lookAt(0, 2.2, 0);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+
+      const ambient = new THREE.HemisphereLight(0xf4ead8, 0x66765e, 2.0);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xffe1b5, 3.2);
+      keyLight.position.set(-12, 22, 16);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(2048, 2048);
+      keyLight.shadow.camera.left = -20;
+      keyLight.shadow.camera.right = 20;
+      keyLight.shadow.camera.top = 20;
+      keyLight.shadow.camera.bottom = -20;
+      keyLight.shadow.normalBias = 0.035;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0xc5d7e2, 1.0);
+      fillLight.position.set(14, 11, -16);
+      scene.add(fillLight);
+
+      const materials = {
+        base: new THREE.MeshStandardMaterial({ color: 0x493d32, roughness: 0.82 }),
+        trim: new THREE.MeshStandardMaterial({ color: 0x806344, roughness: 0.58 }),
+        rock: new THREE.MeshStandardMaterial({ color: 0x817b6e, roughness: 0.96, flatShading: true }),
+        snow: new THREE.MeshStandardMaterial({ color: 0xe9e5d8, roughness: 0.9 }),
+        trunk: new THREE.MeshStandardMaterial({ color: 0x60432d, roughness: 0.96 }),
+        pine: new THREE.MeshStandardMaterial({ color: 0x315640, roughness: 0.88 }),
+        pineLight: new THREE.MeshStandardMaterial({ color: 0x55714b, roughness: 0.9 }),
+        stream: new THREE.MeshStandardMaterial({ color: 0x6b9b9e, roughness: 0.28, metalness: 0.08 }),
+        rail: new THREE.MeshStandardMaterial({ color: 0x383c3c, metalness: 0.72, roughness: 0.32 }),
+        tie: new THREE.MeshStandardMaterial({ color: 0x684d35, roughness: 0.92 }),
+        bridge: new THREE.MeshStandardMaterial({ color: 0x78553b, roughness: 0.86 }),
+        bridgeLight: new THREE.MeshStandardMaterial({ color: 0x9a704a, roughness: 0.84 }),
+        trainRed: new THREE.MeshStandardMaterial({ color: 0x9f4432, roughness: 0.48, metalness: 0.08 }),
+        trainDark: new THREE.MeshStandardMaterial({ color: 0x29302e, roughness: 0.5, metalness: 0.35 }),
+        brass: new THREE.MeshStandardMaterial({ color: 0xc49b50, roughness: 0.36, metalness: 0.62 }),
+        glass: new THREE.MeshStandardMaterial({ color: 0x9ebbc0, roughness: 0.24, metalness: 0.08 }),
+        lamp: new THREE.MeshStandardMaterial({
+          color: 0xffe2a0,
+          emissive: 0xffb84d,
+          emissiveIntensity: 1.6,
+          roughness: 0.3
+        })
+      };
+
+      const displayBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(15.1, 15.35, 0.62, 112),
+        materials.base
+      );
+      displayBase.position.y = -0.31;
+      displayBase.receiveShadow = true;
+      scene.add(displayBase);
+
+      const baseTrim = new THREE.Mesh(
+        new THREE.CylinderGeometry(15.17, 15.38, 0.16, 112),
+        materials.trim
+      );
+      baseTrim.position.y = -0.13;
+      baseTrim.castShadow = true;
+      scene.add(baseTrim);
+
+      const peaks = [
+        { x: -7.3, z: -7.1, height: 4.8, widthX: 2.8, widthZ: 2.7 },
+        { x: -6.0, z: 7.3, height: 5.2, widthX: 3.1, widthZ: 2.5 },
+        { x: 7.1, z: -7.0, height: 5.4, widthX: 2.9, widthZ: 2.8 },
+        { x: 7.2, z: 7.0, height: 4.7, widthX: 3.0, widthZ: 2.6 },
+        { x: -11.0, z: 0.2, height: 3.6, widthX: 2.2, widthZ: 3.3 },
+        { x: 11.0, z: 0.6, height: 3.8, widthX: 2.3, widthZ: 3.1 }
+      ];
+
+      function smoothstep(edge0, edge1, value) {
+        const amount = THREE.MathUtils.clamp((value - edge0) / (edge1 - edge0), 0, 1);
+        return amount * amount * (3 - 2 * amount);
+      }
+
+      function terrainHeight(x, z) {
+        let height = 0.52;
+        for (const peak of peaks) {
+          const dx = (x - peak.x) / peak.widthX;
+          const dz = (z - peak.z) / peak.widthZ;
+          height += peak.height * Math.exp(-0.5 * (dx * dx + dz * dz));
+        }
+
+        const ridgeDistance = Math.abs(Math.abs(z) - 6.2) / 1.75;
+        height += 0.76 * Math.exp(-0.5 * ridgeDistance * ridgeDistance)
+          * Math.exp(-0.5 * (x / 10) ** 2);
+
+        const gorge = Math.exp(-0.5 * ((x / 1.55) ** 2 + (z / 5.3) ** 2));
+        height -= 0.92 * gorge;
+        height += 0.075 * Math.sin(x * 1.15 + z * 0.55) * Math.cos(z * 0.72);
+        const edgeFade = 1 - smoothstep(12.2, 14.35, Math.hypot(x, z));
+        return Math.max(0.2, 0.22 + (height - 0.22) * edgeFade);
+      }
+
+      function terrainColor(height) {
+        const grass = new THREE.Color(0x708153);
+        const highland = new THREE.Color(0x777967);
+        const rock = new THREE.Color(0x8a877d);
+        const snow = new THREE.Color(0xe9e5d8);
+        if (height < 1.9) {
+          return grass.clone().lerp(highland, height / 1.9);
+        }
+        if (height < 3.8) {
+          return highland.clone().lerp(rock, (height - 1.9) / 1.9);
+        }
+        return rock.clone().lerp(snow, THREE.MathUtils.clamp((height - 3.8) / 1.25, 0, 1));
+      }
+
+      function createTerrain() {
+        const divisions = 112;
+        const extent = 14.45;
+        const positions = [];
+        const colors = [];
+        const indices = [];
+
+        for (let row = 0; row <= divisions; row += 1) {
+          const z = -extent + (2 * extent * row) / divisions;
+          for (let column = 0; column <= divisions; column += 1) {
+            const x = -extent + (2 * extent * column) / divisions;
+            const height = terrainHeight(x, z);
+            positions.push(x, height, z);
+            const color = terrainColor(height);
+            colors.push(color.r, color.g, color.b);
+          }
+        }
+
+        const rowSize = divisions + 1;
+        for (let row = 0; row < divisions; row += 1) {
+          for (let column = 0; column < divisions; column += 1) {
+            const x = -extent + (2 * extent * (column + 0.5)) / divisions;
+            const z = -extent + (2 * extent * (row + 0.5)) / divisions;
+            if (Math.hypot(x, z) > 14.28) continue;
+
+            const a = row * rowSize + column;
+            const b = a + 1;
+            const d = a + rowSize;
+            const c = d + 1;
+            indices.push(a, d, b, b, d, c);
+          }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.94,
+          flatShading: false
+        });
+        const terrain = new THREE.Mesh(geometry, material);
+        terrain.receiveShadow = true;
+        terrain.castShadow = true;
+        scene.add(terrain);
+      }
+
+      createTerrain();
+
+      const bridgeDeckLevel = 1.36;
+
+      function trackLevel(x, z) {
+        const xBlend = 1 - smoothstep(2.3, 4.4, Math.abs(x));
+        const zBlend = 1 - smoothstep(1.25, 2.45, Math.abs(z));
+        const bridgeBlend = xBlend * zBlend;
+        const naturalLevel = terrainHeight(x, z) + 0.18;
+        return THREE.MathUtils.lerp(naturalLevel, bridgeDeckLevel, bridgeBlend);
+      }
+
+      const routeXZ = [
+        [-11.4, -2.7],
+        [-9.1, -2.75],
+        [-6.4, -2.2],
+        [-3.9, -1.25],
+        [-1.6, -0.48],
+        [0.8, 0.34],
+        [3.2, 1.05],
+        [6.1, 1.9],
+        [8.8, 2.45],
+        [11.1, 2.5]
+      ];
+      const trainPath = new THREE.CatmullRomCurve3(
+        routeXZ.map(([x, z]) => new THREE.Vector3(x, trackLevel(x, z) + 0.24, z)),
+        false,
+        "centripetal"
+      );
+      trainPath.arcLengthDivisions = 600;
+      trainPath.updateArcLengths();
+
+      function pathNormal(u) {
+        const tangent = trainPath.getTangentAt(u);
+        return new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+      }
+
+      function makeOffsetRail(side) {
+        const points = [];
+        const divisions = 180;
+        for (let i = 0; i <= divisions; i += 1) {
+          const u = i / divisions;
+          const point = trainPath.getPointAt(u);
+          point.addScaledVector(pathNormal(u), side * 0.38);
+          points.push(point);
+        }
+        return new THREE.CatmullRomCurve3(points, false, "centripetal");
+      }
+
+      for (const side of [-1, 1]) {
+        const railGeometry = new THREE.TubeGeometry(makeOffsetRail(side), 320, 0.075, 8, false);
+        const rail = new THREE.Mesh(railGeometry, materials.rail);
+        rail.castShadow = true;
+        rail.receiveShadow = true;
+        scene.add(rail);
+      }
+
+      const sleeperCount = Math.ceil(trainPath.getLength() / 0.58);
+      for (let i = 0; i <= sleeperCount; i += 1) {
+        const u = i / sleeperCount;
+        const point = trainPath.getPointAt(u);
+        const normal = pathNormal(u);
+        const sleeper = new THREE.Mesh(
+          new THREE.BoxGeometry(1.18, 0.14, 0.26),
+          materials.tie
+        );
+        sleeper.position.set(point.x, point.y - 0.19, point.z);
+        sleeper.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), normal);
+        sleeper.castShadow = true;
+        sleeper.receiveShadow = true;
+        scene.add(sleeper);
+      }
+
+      function addBeam(start, end, thickness, material) {
+        const from = new THREE.Vector3(...start);
+        const to = new THREE.Vector3(...end);
+        const direction = new THREE.Vector3().subVectors(to, from);
+        const length = direction.length();
+        const beam = new THREE.Mesh(
+          new THREE.BoxGeometry(thickness, length, thickness),
+          material
+        );
+        beam.position.copy(from).add(to).multiplyScalar(0.5);
+        beam.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          direction.normalize()
+        );
+        beam.castShadow = true;
+        beam.receiveShadow = true;
+        scene.add(beam);
+        return beam;
+      }
+
+      function addBridge() {
+        const halfSpan = 3.25;
+        const deckY = bridgeDeckLevel - 0.18;
+        for (const z of [-0.82, 0.82]) {
+          addBeam([-halfSpan, deckY, z], [halfSpan, deckY, z], 0.28, materials.bridge);
+          addBeam([-halfSpan, deckY + 1.18, z], [halfSpan, deckY + 1.18, z], 0.19, materials.bridgeLight);
+          for (const x of [-2.7, -1.35, 0, 1.35, 2.7]) {
+            addBeam([x, deckY, z], [x, deckY + 1.18, z], 0.14, materials.bridge);
+          }
+          for (const x of [-2.7, -1.35, 0, 1.35]) {
+            const nextX = x + 1.35;
+            addBeam([x, deckY, z], [nextX, deckY + 1.18, z], 0.11, materials.bridgeLight);
+            addBeam([x, deckY + 1.18, z], [nextX, deckY, z], 0.11, materials.bridgeLight);
+          }
+        }
+
+        for (const x of [-2.7, -1.35, 0, 1.35, 2.7]) {
+          addBeam([x, deckY - 0.01, -0.9], [x, deckY - 0.01, 0.9], 0.16, materials.bridgeLight);
+        }
+
+        for (const x of [-2.25, 0, 2.25]) {
+          for (const z of [-0.72, 0.72]) {
+            const bottomY = terrainHeight(x, z) + 0.1;
+            addBeam([x, bottomY, z], [x, deckY, z], 0.17, materials.bridge);
+          }
+          addBeam([x, deckY - 0.13, -0.83], [x, deckY - 0.13, 0.83], 0.13, materials.bridge);
+        }
+      }
+
+      addBridge();
+
+      function addTree(x, z, scale = 1) {
+        const group = new THREE.Group();
+        group.position.set(x, terrainHeight(x, z), z);
+        group.scale.setScalar(scale);
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.15, 0.82, 8),
+          materials.trunk
+        );
+        trunk.position.y = 0.4;
+        trunk.castShadow = true;
+        group.add(trunk);
+
+        for (let i = 0; i < 3; i += 1) {
+          const foliage = new THREE.Mesh(
+            new THREE.ConeGeometry(0.62 - i * 0.1, 1.05, 9),
+            i === 1 ? materials.pineLight : materials.pine
+          );
+          foliage.position.y = 0.86 + i * 0.48;
+          foliage.castShadow = true;
+          group.add(foliage);
+        }
+        scene.add(group);
+      }
+
+      function addRock(x, z, scale) {
+        const rock = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(scale, 0),
+          materials.rock
+        );
+        rock.position.set(x, terrainHeight(x, z) + scale * 0.36, z);
+        rock.scale.set(1.15, 0.72, 0.9);
+        rock.rotation.set(0.14, x * 0.11, z * 0.09);
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        scene.add(rock);
+      }
+
+      [
+        [-12.2, -7.8, 1.0], [-9.2, 8.5, 1.1], [-4.3, 9.5, 0.82],
+        [3.3, -9.1, 0.92], [9.6, -8.2, 1.12], [12.4, 6.4, 0.94],
+        [10.7, 0.2, 0.84], [-11.7, 2.4, 0.9], [5.1, 9.8, 0.83]
+      ].forEach(([x, z, scale]) => addTree(x, z, scale));
+
+      [
+        [-8.7, -5.3, 0.58], [-6.1, 5.1, 0.46], [-2.7, -7.3, 0.62],
+        [4.1, 7.1, 0.56], [8.8, 5.5, 0.65], [11.7, -4.4, 0.5],
+        [1.3, -5.6, 0.42], [-10.4, 7.1, 0.48]
+      ].forEach(([x, z, scale]) => addRock(x, z, scale));
+
+      const streamPoints = [];
+      for (let i = 0; i <= 42; i += 1) {
+        const z = -7.4 + (14.8 * i) / 42;
+        const x = 0.18 + 0.24 * Math.sin(z * 0.7);
+        streamPoints.push(new THREE.Vector3(x, terrainHeight(x, z) + 0.035, z));
+      }
+      const streamCurve = new THREE.CatmullRomCurve3(streamPoints);
+      const stream = new THREE.Mesh(
+        new THREE.TubeGeometry(streamCurve, 180, 0.16, 7, false),
+        materials.stream
+      );
+      stream.receiveShadow = true;
+      scene.add(stream);
+
+      const trainRoot = new THREE.Group();
+      scene.add(trainRoot);
+
+      const locomotive = new THREE.Group();
+      trainRoot.add(locomotive);
+
+      function addTrainPart(geometry, material, position, rotation = [0, 0, 0]) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(...position);
+        mesh.rotation.set(...rotation);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        locomotive.add(mesh);
+        return mesh;
+      }
+
+      addTrainPart(new THREE.BoxGeometry(2.0, 0.22, 0.78), materials.trainDark, [0, 0.72, 0]);
+      addTrainPart(new THREE.BoxGeometry(1.38, 0.52, 0.74), materials.trainRed, [0.18, 1.03, 0]);
+      addTrainPart(
+        new THREE.CylinderGeometry(0.29, 0.29, 1.12, 24),
+        materials.trainRed,
+        [0.34, 1.14, 0],
+        [0, 0, Math.PI / 2]
+      );
+      addTrainPart(
+        new THREE.CylinderGeometry(0.075, 0.09, 0.42, 12),
+        materials.trainDark,
+        [0.7, 1.56, 0]
+      );
+      addTrainPart(
+        new THREE.CylinderGeometry(0.16, 0.2, 0.12, 18),
+        materials.brass,
+        [0.34, 1.38, 0],
+        [0, 0, Math.PI / 2]
+      );
+      addTrainPart(new THREE.BoxGeometry(0.62, 0.66, 0.72), materials.trainRed, [-0.63, 1.13, 0]);
+      addTrainPart(new THREE.BoxGeometry(0.72, 0.12, 0.84), materials.trainDark, [-0.64, 1.51, 0]);
+
+      for (const z of [-0.367, 0.367]) {
+        addTrainPart(new THREE.BoxGeometry(0.25, 0.3, 0.035), materials.glass, [-0.63, 1.2, z]);
+        addTrainPart(
+          new THREE.SphereGeometry(0.105, 12, 8),
+          materials.lamp,
+          [0.96, 1.06, z * 0.82]
+        );
+      }
+      addTrainPart(new THREE.BoxGeometry(0.22, 0.18, 0.94), materials.trainDark, [1.0, 0.72, 0]);
+
+      const wheelPivots = [];
+      for (const x of [-0.7, 0, 0.68]) {
+        for (const z of [-0.43, 0.43]) {
+          const pivot = new THREE.Group();
+          pivot.position.set(x, 0.36, z);
+          locomotive.add(pivot);
+          const wheel = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.34, 0.34, 0.13, 24),
+            materials.trainDark
+          );
+          wheel.rotation.x = Math.PI / 2;
+          wheel.castShadow = true;
+          wheel.receiveShadow = true;
+          pivot.add(wheel);
+
+          const hub = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 0.145, 16),
+            materials.brass
+          );
+          hub.rotation.x = Math.PI / 2;
+          hub.castShadow = true;
+          pivot.add(hub);
+          wheelPivots.push(pivot);
+        }
+      }
+
+      const pathLength = trainPath.getLength();
+      let currentTime = 0;
+      let playing = false;
+      let startedAt = 0;
+      let frameRequest = 0;
+      let disposed = false;
+
+      function setTime(seconds) {
+        if (!Number.isFinite(seconds)) {
+          throw new TypeError("Animation time must be a finite number.");
+        }
+        currentTime = THREE.MathUtils.clamp(seconds, 0, TEST_DURATION_SECONDS);
+        const progress = currentTime / TEST_DURATION_SECONDS;
+        const point = trainPath.getPointAt(progress);
+        const tangent = trainPath.getTangentAt(progress);
+        trainRoot.position.copy(point);
+        trainRoot.rotation.y = -Math.atan2(tangent.z, tangent.x);
+        const distance = progress * pathLength;
+        const wheelAngle = distance / 0.34;
+        for (const wheelPivot of wheelPivots) {
+          wheelPivot.rotation.z = wheelAngle;
+        }
+      }
+
+      function play() {
+        if (disposed || playing) return;
+        if (!LOOP_ANIMATION && currentTime >= TEST_DURATION_SECONDS) {
+          setTime(0);
+        }
+        playing = true;
+        startedAt = performance.now() - currentTime * 1000;
+        frameRequest = window.requestAnimationFrame(tick);
+      }
+
+      function tick(now) {
+        if (!playing || disposed) return;
+        const elapsed = (now - startedAt) / 1000;
+        if (LOOP_ANIMATION) {
+          setTime(elapsed % TEST_DURATION_SECONDS);
+        } else {
+          setTime(Math.min(elapsed, TEST_DURATION_SECONDS));
+        }
+        renderer.render(scene, camera);
+        if (playing && !LOOP_ANIMATION && currentTime >= TEST_DURATION_SECONDS) {
+          playing = false;
+          return;
+        }
+        frameRequest = window.requestAnimationFrame(tick);
+      }
+
+      function pause() {
+        playing = false;
+        window.cancelAnimationFrame(frameRequest);
+      }
+
+      function reset() {
+        pause();
+        setTime(0);
+        renderer.render(scene, camera);
+      }
+
+      function resize() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (!width || !height) return;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+        renderer.render(scene, camera);
+      }
+
+      const resizeObserver = "ResizeObserver" in window
+        ? new ResizeObserver(resize)
+        : null;
+      if (resizeObserver) {
+        resizeObserver.observe(canvas);
+      } else {
+        window.addEventListener("resize", resize);
+      }
+
+      function dispose() {
+        if (disposed) return;
+        pause();
+        disposed = true;
+        resizeObserver?.disconnect();
+        window.removeEventListener("resize", resize);
+        const disposedGeometries = new Set();
+        const disposedMaterials = new Set();
+        scene.traverse((object) => {
+          if (object.geometry && !disposedGeometries.has(object.geometry)) {
+            disposedGeometries.add(object.geometry);
+            object.geometry.dispose();
+          }
+          const objectMaterials = Array.isArray(object.material)
+            ? object.material
+            : object.material
+              ? [object.material]
+              : [];
+          for (const material of objectMaterials) {
+            if (!disposedMaterials.has(material)) {
+              disposedMaterials.add(material);
+              material.dispose();
+            }
+          }
+        });
+        renderer.dispose();
+      }
+
+      window.addEventListener("pagehide", dispose, { once: true });
+      window.TSA_ANIMATION = {
+        durationSeconds: TEST_DURATION_SECONDS,
+        setTime,
+        reset,
+        play,
+        pause,
+        dispose
+      };
+      setTime(0);
+      resize();
+      play();
+    }
+  </script>
+</body>
+</html>

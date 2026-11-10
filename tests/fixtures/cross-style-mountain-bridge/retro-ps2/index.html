@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mountain Bridge Delivery with a Retro PS2-inspired presentation.">
+  <title>Mountain Bridge Delivery — Retro PS2</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #10151d;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% 34%, #3b4653 0, #1d2732 60%, #0c1118 100%);
+    }
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    main {
+      position: relative;
+      width: min(96vw, 88vh, 1280px);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border: 2px solid #72818d;
+      background: #8d9ba4;
+      box-shadow: 0 24px 70px rgb(0 0 0 / 55%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: auto;
+      padding: 1rem;
+      color: #fff0ee;
+      background: rgb(65 18 18 / 94%);
+      font: 14px/1.5 ui-monospace, monospace;
+      white-space: pre-wrap;
+    }
+
+    #error.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="Mountain Bridge Delivery retro 3D scene">
+    <canvas id="scene" aria-label="Delivery truck crossing a wooden mountain bridge"></canvas>
+    <output id="error" role="alert" aria-live="assertive"></output>
+  </main>
+  <script type="module">
+    const canvas = document.querySelector("#scene");
+    const errorPanel = document.querySelector("#error");
+
+    function showError(error) {
+      console.error("Retro PS2 scene initialization failed:", error);
+      errorPanel.textContent = `Scene initialization failed:\n${error?.message ?? error}`;
+      errorPanel.classList.add("visible");
+    }
+
+    try {
+      const THREE = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"
+      );
+      startScene(THREE);
+    } catch (error) {
+      showError(error);
+    }
+
+    function startScene(THREE) {
+      const DURATION = 8;
+      const DRIVE_DURATION = 7.2;
+      const ROAD_WIDTH = 2.45;
+      const BRIDGE_START = 0.37;
+      const BRIDGE_END = 0.64;
+      const WHEEL_RADIUS = 0.32;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x8795a0);
+      scene.fog = new THREE.Fog(0x8795a0, 37, 76);
+
+      const camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 120);
+      camera.position.set(17, 14, 22);
+      camera.lookAt(0, 1.0, -0.8);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: false,
+        alpha: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+
+      scene.add(new THREE.HemisphereLight(0xb4c3d2, 0x3e4543, 1.05));
+      const keyLight = new THREE.DirectionalLight(0xffd18c, 3.65);
+      keyLight.position.set(-9, 16, 10);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(768, 768);
+      keyLight.shadow.camera.left = -17;
+      keyLight.shadow.camera.right = 17;
+      keyLight.shadow.camera.top = 17;
+      keyLight.shadow.camera.bottom = -17;
+      keyLight.shadow.normalBias = 0.045;
+      scene.add(keyLight);
+
+      const coolFill = new THREE.DirectionalLight(0x8db7e4, 0.68);
+      coolFill.position.set(11, 8, -11);
+      scene.add(coolFill);
+
+      function makeLowResolutionTexture(base, accents, size = 48) {
+        const textureCanvas = document.createElement("canvas");
+        textureCanvas.width = size;
+        textureCanvas.height = size;
+        const context = textureCanvas.getContext("2d");
+        context.fillStyle = base;
+        context.fillRect(0, 0, size, size);
+        for (let i = 0; i < size * 2; i += 1) {
+          const x = (i * 17 + 5) % size;
+          const y = (i * 29 + 7) % size;
+          context.fillStyle = accents[i % accents.length];
+          context.fillRect(x, y, 2 + i % 3, 2 + (i % 2));
+        }
+        const texture = new THREE.CanvasTexture(textureCanvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(5, 6);
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestMipmapNearestFilter;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      const materials = {
+        island: new THREE.MeshStandardMaterial({ color: 0x353b3b, roughness: 1, flatShading: true }),
+        ground: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true }),
+        mountain: new THREE.MeshStandardMaterial({ color: 0x64716e, roughness: 1, flatShading: true }),
+        rock: new THREE.MeshStandardMaterial({ color: 0x77766b, roughness: 1, flatShading: true }),
+        roadBed: new THREE.MeshStandardMaterial({ color: 0x6d6655, roughness: 1, flatShading: true }),
+        road: new THREE.MeshStandardMaterial({
+          color: 0xb9b2a1,
+          map: makeLowResolutionTexture("#77766d", ["#a49d88", "#636963", "#8d8877"]),
+          roughness: 1,
+          flatShading: true
+        }),
+        roadEdge: new THREE.MeshStandardMaterial({ color: 0xd4c59f, roughness: 0.9, flatShading: true }),
+        water: new THREE.MeshStandardMaterial({
+          color: 0x4a8791,
+          roughness: 0.42,
+          metalness: 0.08,
+          flatShading: true
+        }),
+        bank: new THREE.MeshStandardMaterial({ color: 0x555a51, roughness: 1, flatShading: true }),
+        wood: new THREE.MeshStandardMaterial({ color: 0x72583e, roughness: 0.95, flatShading: true }),
+        woodLight: new THREE.MeshStandardMaterial({ color: 0xa1845b, roughness: 0.9, flatShading: true }),
+        woodDark: new THREE.MeshStandardMaterial({ color: 0x423b33, roughness: 0.98, flatShading: true }),
+        truckPaint: new THREE.MeshStandardMaterial({ color: 0xb98a45, roughness: 0.68, metalness: 0.08, flatShading: true }),
+        truckTrim: new THREE.MeshStandardMaterial({ color: 0x48515a, roughness: 0.72, flatShading: true }),
+        window: new THREE.MeshStandardMaterial({ color: 0x35536a, roughness: 0.38, metalness: 0.12, flatShading: true }),
+        tire: new THREE.MeshStandardMaterial({ color: 0x25282b, roughness: 0.98, flatShading: true }),
+        hub: new THREE.MeshStandardMaterial({ color: 0x9b9b8a, roughness: 0.62, metalness: 0.18, flatShading: true }),
+        vegetation: new THREE.MeshStandardMaterial({ color: 0x526653, roughness: 1, flatShading: true })
+      };
+
+      function addMesh(geometry, material, parent = scene, castShadow = true, receiveShadow = true) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = receiveShadow;
+        parent.add(mesh);
+        return mesh;
+      }
+
+      function addBox(parent, material, size, position, rotationY = 0, castShadow = true) {
+        const mesh = addMesh(new THREE.BoxGeometry(...size), material, parent, castShadow);
+        mesh.position.set(...position);
+        mesh.rotation.y = rotationY;
+        return mesh;
+      }
+
+      function makeRibbon(path, start, end, width, material, yOffset = 0, steps = 80) {
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+        const count = Math.max(2, Math.ceil((end - start) * steps));
+        for (let i = 0; i <= count; i += 1) {
+          const u = start + (end - start) * (i / count);
+          const point = path.getPointAt(u);
+          const tangent = path.getTangentAt(u);
+          const lateral = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+          const left = point.clone().addScaledVector(lateral, width / 2);
+          const right = point.clone().addScaledVector(lateral, -width / 2);
+          positions.push(left.x, point.y + yOffset, left.z, right.x, point.y + yOffset, right.z);
+          uvs.push(0, i / count, 1, i / count);
+          if (i < count) {
+            const a = i * 2;
+            indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+          }
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        return addMesh(geometry, material, scene, false, true);
+      }
+
+      function makeMountainTerrain() {
+        const columns = 26;
+        const rows = 18;
+        const width = 26;
+        const depth = 18;
+        const positions = [];
+        const colors = [];
+        const indices = [];
+        const peaks = [
+          [-9.0, -7.0, 2.4, 2.6],
+          [0.2, -8.0, 2.8, 2.7],
+          [10.5, -8.3, 1.9, 2.1],
+          [-12.0, -1.6, 1.6, 2.2],
+          [12.0, 2.2, 1.6, 2.3]
+        ];
+        for (let row = 0; row <= rows; row += 1) {
+          const z = -depth / 2 + depth * row / rows;
+          for (let column = 0; column <= columns; column += 1) {
+            const x = -width / 2 + width * column / columns;
+            let height = 0.43 + 0.035 * Math.sin(x * 1.9 + z) * Math.cos(z * 1.4);
+            for (const [peakX, peakZ, peakHeight, spread] of peaks) {
+              const distance = ((x - peakX) ** 2 + (z - peakZ) ** 2) / (2 * spread * spread);
+              height += peakHeight * Math.exp(-distance);
+            }
+            positions.push(x, height, z);
+            const shade = Math.min(1, Math.max(0, (height - 0.35) / 3.3));
+            const base = new THREE.Color(0x596a57).lerp(new THREE.Color(0x92907b), shade);
+            colors.push(base.r, base.g, base.b);
+          }
+        }
+        const stride = columns + 1;
+        for (let row = 0; row < rows; row += 1) {
+          for (let column = 0; column < columns; column += 1) {
+            const a = row * stride + column;
+            indices.push(a, a + stride, a + 1, a + 1, a + stride, a + stride + 1);
+          }
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        return addMesh(geometry, materials.ground, scene, true, true);
+      }
+
+      const route = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-11.5, 0.82, 5.5),
+        new THREE.Vector3(-7.4, 0.82, 4.0),
+        new THREE.Vector3(-4.0, 0.82, 1.9),
+        new THREE.Vector3(-0.7, 0.82, 0.25),
+        new THREE.Vector3(2.7, 0.82, -1.45),
+        new THREE.Vector3(5.4, 0.82, -3.25),
+        new THREE.Vector3(7.45, 0.82, -4.65)
+      ], false, "catmullrom", 0.15);
+
+      const island = addMesh(
+        new THREE.CylinderGeometry(13.1, 13.45, 0.78, 20),
+        materials.island
+      );
+      island.position.y = -0.02;
+      makeMountainTerrain();
+
+      const farPeakA = addMesh(
+        new THREE.IcosahedronGeometry(1, 0),
+        materials.mountain
+      );
+      farPeakA.position.set(-8.8, 2.0, -7.2);
+      farPeakA.scale.set(3.0, 2.5, 2.3);
+      const farPeakB = addMesh(
+        new THREE.IcosahedronGeometry(1, 0),
+        materials.rock
+      );
+      farPeakB.position.set(0.1, 2.25, -8.0);
+      farPeakB.scale.set(3.2, 2.9, 2.5);
+      const farPeakC = addMesh(
+        new THREE.IcosahedronGeometry(1, 0),
+        materials.mountain
+      );
+      farPeakC.position.set(7.8, 1.9, -7.7);
+      farPeakC.scale.set(2.8, 2.4, 2.2);
+
+      const streamPath = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.12, 0.57, -9.0),
+        new THREE.Vector3(0.08, 0.57, -5.0),
+        new THREE.Vector3(-0.16, 0.57, -1.4),
+        new THREE.Vector3(0.12, 0.57, 2.5),
+        new THREE.Vector3(-0.1, 0.57, 6.0),
+        new THREE.Vector3(0.14, 0.57, 9.0)
+      ], false, "catmullrom", 0.2);
+      makeRibbon(streamPath, 0, 1, 1.05, materials.water, 0, 90);
+
+      for (let i = 0; i <= 27; i += 1) {
+        const u = BRIDGE_START + (BRIDGE_END - BRIDGE_START) * (i / 27);
+        const point = route.getPointAt(u);
+        const tangent = route.getTangentAt(u);
+        const yaw = Math.atan2(tangent.x, tangent.z);
+        addBox(
+          scene,
+          i % 3 === 0 ? materials.woodLight : materials.wood,
+          [3.0, 0.16, 0.34],
+          [point.x, point.y - 0.08, point.z],
+          yaw
+        );
+      }
+
+      for (const side of [-1, 1]) {
+        const railPoints = [];
+        for (let i = 0; i <= 18; i += 1) {
+          const u = BRIDGE_START + (BRIDGE_END - BRIDGE_START) * (i / 18);
+          const point = route.getPointAt(u);
+          const tangent = route.getTangentAt(u);
+          const lateral = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+          railPoints.push(
+            point.clone().addScaledVector(lateral, side * 1.47).setY(point.y + 0.52)
+          );
+        }
+        const railPath = new THREE.CatmullRomCurve3(railPoints);
+        addMesh(new THREE.TubeGeometry(railPath, 54, 0.055, 5, false), materials.woodDark);
+        for (let i = 0; i <= 6; i += 1) {
+          const u = BRIDGE_START + (BRIDGE_END - BRIDGE_START) * (i / 6);
+          const point = route.getPointAt(u);
+          const tangent = route.getTangentAt(u);
+          const lateral = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+          const postPosition = point.clone().addScaledVector(lateral, side * 1.47);
+          addBox(scene, materials.wood, [0.14, 0.5, 0.14], [
+            postPosition.x,
+            point.y + 0.23,
+            postPosition.z
+          ], Math.atan2(tangent.x, tangent.z));
+        }
+      }
+
+      for (const [start, end] of [[0, BRIDGE_START], [BRIDGE_END, 1]]) {
+        makeRibbon(route, start, end, ROAD_WIDTH + 0.45, materials.roadBed, -0.1, 100);
+        makeRibbon(route, start, end, ROAD_WIDTH, materials.road, -0.01, 100);
+        for (const side of [-1, 1]) {
+          const edgePoints = [];
+          for (let i = 0; i <= 26; i += 1) {
+            const u = start + (end - start) * (i / 26);
+            const point = route.getPointAt(u);
+            const tangent = route.getTangentAt(u);
+            const lateral = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+            edgePoints.push(
+              point.clone().addScaledVector(lateral, side * (ROAD_WIDTH / 2 - 0.08)).setY(point.y + 0.01)
+            );
+          }
+          addMesh(
+            new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edgePoints), 60, 0.025, 4, false),
+            materials.roadEdge,
+            scene,
+            false,
+            false
+          );
+        }
+      }
+
+      function makeTree(x, z, scale = 1) {
+        const trunk = addBox(
+          scene,
+          materials.woodDark,
+          [0.18 * scale, 0.8 * scale, 0.18 * scale],
+          [x, 0.84 * scale, z]
+        );
+        trunk.material = materials.woodDark;
+        for (let tier = 0; tier < 2; tier += 1) {
+          const crown = addMesh(
+            new THREE.ConeGeometry((0.52 - tier * 0.09) * scale, 0.9 * scale, 5),
+            materials.vegetation
+          );
+          crown.position.set(x, (1.35 + tier * 0.48) * scale, z);
+        }
+      }
+
+      for (const tree of [
+        [-10.2, -4.8, 0.9], [-7.2, -8.7, 1.0], [1.4, -9.4, 0.86],
+        [7.4, -7.8, 0.88], [11.4, 2.6, 0.9], [-10.9, 2.4, 0.8]
+      ]) {
+        makeTree(...tree);
+      }
+
+      const warehouse = new THREE.Group();
+      warehouse.position.set(9.42, 0.51, -2.28);
+      scene.add(warehouse);
+      addBox(warehouse, materials.woodLight, [3.0, 2.0, 2.35], [0, 1.0, 0]);
+      addBox(warehouse, materials.woodDark, [0.14, 2.05, 0.13], [-1.4, 1.02, 1.18]);
+      addBox(warehouse, materials.woodDark, [0.14, 2.05, 0.13], [1.4, 1.02, 1.18]);
+      addBox(warehouse, materials.woodDark, [2.9, 0.14, 0.12], [0, 1.92, 1.18]);
+      addBox(warehouse, materials.wood, [1.0, 1.42, 0.1], [0.42, 0.72, 1.22]);
+      const roofLeft = addBox(warehouse, materials.woodDark, [1.9, 0.17, 2.75], [-0.82, 2.55, 0]);
+      roofLeft.rotation.z = 0.4;
+      const roofRight = addBox(warehouse, materials.woodDark, [1.9, 0.17, 2.75], [0.82, 2.55, 0]);
+      roofRight.rotation.z = -0.4;
+
+      const truck = new THREE.Group();
+      scene.add(truck);
+      addBox(truck, materials.truckPaint, [1.48, 0.76, 1.56], [0, 1.0, -0.58]);
+      addBox(truck, materials.truckTrim, [1.35, 0.7, 0.98], [0, 0.92, 0.88]);
+      addBox(truck, materials.truckPaint, [1.38, 0.12, 0.62], [0, 0.59, 1.22]);
+      addBox(truck, materials.window, [1.12, 0.4, 0.05], [0, 1.14, 1.39], 0, false);
+      addBox(truck, materials.window, [0.05, 0.38, 0.72], [-0.7, 1.13, 0.9], 0, false);
+      addBox(truck, materials.window, [0.05, 0.38, 0.72], [0.7, 1.13, 0.9], 0, false);
+      addBox(truck, materials.hub, [1.22, 0.16, 0.12], [0, 0.5, 1.62]);
+
+      const wheelSpinners = [];
+      for (const x of [-0.82, 0.82]) {
+        for (const z of [-0.98, 0.98]) {
+          const spinner = new THREE.Group();
+          spinner.position.set(x, 0.32, z);
+          truck.add(spinner);
+          const tire = addMesh(
+            new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, 0.24, 10),
+            materials.tire,
+            spinner
+          );
+          tire.rotation.z = Math.PI / 2;
+          const hub = addMesh(
+            new THREE.CylinderGeometry(0.18, 0.18, 0.27, 8),
+            materials.hub,
+            spinner
+          );
+          hub.rotation.z = Math.PI / 2;
+          for (const side of [-1, 1]) {
+            for (let spokeIndex = 0; spokeIndex < 4; spokeIndex += 1) {
+              const angle = spokeIndex * Math.PI / 2;
+              const spoke = addMesh(
+                new THREE.BoxGeometry(0.035, 0.14, 0.045),
+                materials.truckTrim,
+                spinner,
+                false,
+                false
+              );
+              spoke.position.set(
+                side * 0.145,
+                Math.cos(angle) * 0.085,
+                Math.sin(angle) * 0.085
+              );
+              spoke.rotation.x = angle;
+            }
+          }
+          wheelSpinners.push(spinner);
+        }
+      }
+
+      const roadDistance = route.getLength();
+      const startTime = performance.now();
+
+      function animate(now) {
+        const elapsed = Math.min((now - startTime) / 1000, DURATION);
+        const progress = Math.min(elapsed / DRIVE_DURATION, 1);
+        const eased = progress * progress * (3 - 2 * progress);
+        const point = route.getPointAt(eased);
+        const tangent = route.getTangentAt(eased);
+        truck.position.copy(point);
+        truck.rotation.y = Math.atan2(tangent.x, tangent.z);
+        const traveled = roadDistance * eased;
+        for (const wheel of wheelSpinners) {
+          wheel.rotation.x = traveled / WHEEL_RADIUS;
+        }
+        renderer.render(scene, camera);
+        if (elapsed < DURATION) requestAnimationFrame(animate);
+      }
+
+      function resize() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width === 0 || height === 0) return;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>

@@ -22,7 +22,7 @@ This is an instruction-only visual-style skill. Its discovery and invocation mus
 
 ## Source and design basis
 
-The original `sub skill.txt` source is not available in this repository snapshot, and the available TSA references identify the style without specifying its visual techniques. The techniques below follow the approved Phase 2B requirements; they are not claimed as a verified extraction from the missing source.
+`sub skill.txt` exists in the development checkout but is ignored by Git and is not included in this skill directory. It is not required for installation or use: the guidance below is self-contained and does not require the source file or its scene-specific examples.
 
 ## Purpose and visual techniques
 

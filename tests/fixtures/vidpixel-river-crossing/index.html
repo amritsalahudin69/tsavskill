@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel Art River Crossing</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #182b36;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #182b36;
+    }
+
+    main {
+      width: min(96vw, 960px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      border: 4px solid #293f49;
+      background: #8eb6b4;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
+
+    #init-error {
+      margin: 0;
+      padding: 0.75rem;
+      color: #fff;
+      background: #8b2f36;
+    }
+
+    #init-error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" width="320" height="180" role="img"
+      aria-label="A pixel-art delivery boat crosses a river toward a wooden dock.">
+      Canvas 2D is required to display this scene.
+    </canvas>
+    <p id="init-error" role="alert" hidden></p>
+  </main>
+  <script>
+    "use strict";
+
+    const WIDTH = 320;
+    const HEIGHT = 180;
+    const TEST_DURATION_MS = 8000;
+    const BOAT_TRAVEL_MS = 7000;
+    const BOAT_START_X = 54;
+    const BOAT_DOCK_X = 176;
+    const WATER_STEP_MS = 180;
+
+    const COLORS = {
+      sky: "#92c4c0",
+      farHill: "#688f82",
+      farHillLight: "#83a98e",
+      bank: "#4b725e",
+      bankLight: "#71905e",
+      treeDark: "#315c50",
+      treeLight: "#63815b",
+      sun: "#b5d3b2",
+      sunLight: "#dce1ad",
+      water: "#28778a",
+      waterDeep: "#205e78",
+      waterLight: "#55a8a0",
+      waterGlint: "#8bc4ac",
+      dockDark: "#614a3b",
+      dock: "#a16d47",
+      dockLight: "#c28b56",
+      boatDark: "#303f48",
+      boat: "#d65746",
+      boatLight: "#f17c55",
+      cabin: "#e9c77c",
+      window: "#558b91",
+      shadow: "#1d5368"
+    };
+
+    const canvas = document.getElementById("scene");
+    const errorPanel = document.getElementById("init-error");
+    const context = canvas.getContext("2d", { alpha: false });
+
+    if (!context) {
+      errorPanel.textContent = "Canvas 2D could not be initialized in this browser.";
+      errorPanel.hidden = false;
+    } else {
+      context.imageSmoothingEnabled = false;
+      const startTime = performance.now();
+
+      function rect(color, x, y, width, height) {
+        context.fillStyle = color;
+        context.fillRect(
+          Math.round(x),
+          Math.round(y),
+          Math.round(width),
+          Math.round(height)
+        );
+      }
+
+      function drawTree(x, y, scale) {
+        rect(COLORS.treeDark, x + 3 * scale, y + 7 * scale, 3 * scale, 8 * scale);
+        rect(COLORS.treeDark, x, y + 4 * scale, 9 * scale, 6 * scale);
+        rect(COLORS.treeLight, x + 2 * scale, y + scale, 6 * scale, 6 * scale);
+        rect(COLORS.treeDark, x + 4 * scale, y, 3 * scale, 4 * scale);
+      }
+
+      function drawRiver(elapsedMs) {
+        rect(COLORS.water, 0, 52, WIDTH, HEIGHT - 52);
+        const phase = Math.floor(elapsedMs / WATER_STEP_MS);
+
+        for (let row = 0; row < 11; row += 1) {
+          const y = 63 + row * 10;
+          const direction = row % 2 === 0 ? 1 : -1;
+          const offset = ((phase * direction + row * 13) % 64 + 64) % 64;
+
+          for (let x = -64; x < WIDTH + 64; x += 64) {
+            const rippleX = x + offset;
+            rect(row % 3 === 0 ? COLORS.waterLight : COLORS.waterDeep,
+              rippleX, y, 18 + (row % 3) * 4, 2);
+            rect(COLORS.waterGlint, rippleX + 5, y + 2, 8, 1);
+          }
+        }
+      }
+
+      function drawShore() {
+        rect(COLORS.farHill, 0, 37, 92, 12);
+        rect(COLORS.farHillLight, 18, 33, 54, 6);
+        rect(COLORS.farHill, 92, 40, 100, 10);
+        rect(COLORS.farHillLight, 119, 35, 44, 7);
+        rect(COLORS.farHill, 192, 38, 128, 12);
+        rect(COLORS.farHillLight, 227, 33, 62, 7);
+
+        rect(COLORS.bank, 0, 47, WIDTH, 13);
+        rect(COLORS.bankLight, 0, 47, 42, 4);
+        rect(COLORS.bankLight, 88, 48, 53, 3);
+        rect(COLORS.bankLight, 204, 47, 50, 4);
+        rect(COLORS.bankLight, 276, 49, 44, 3);
+
+        drawTree(27, 35, 1);
+        drawTree(75, 38, 1);
+        drawTree(158, 36, 1);
+        drawTree(287, 36, 1);
+
+        rect(COLORS.bank, 9, 58, 21, 3);
+        rect(COLORS.bankLight, 14, 56, 12, 2);
+        rect(COLORS.bank, 176, 58, 27, 3);
+        rect(COLORS.bankLight, 182, 56, 14, 2);
+      }
+
+      function drawDock() {
+        rect(COLORS.dockDark, 222, 99, 5, 25);
+        rect(COLORS.dockDark, 265, 99, 5, 25);
+        rect(COLORS.dock, 210, 96, 71, 5);
+        rect(COLORS.dockLight, 212, 94, 67, 3);
+        rect(COLORS.dockDark, 212, 100, 67, 2);
+        rect(COLORS.dockLight, 220, 95, 2, 2);
+        rect(COLORS.dockLight, 244, 95, 2, 2);
+        rect(COLORS.dockLight, 269, 95, 2, 2);
+      }
+
+      function getAnimationState(elapsedMs) {
+        const progress = Math.min(Math.max(elapsedMs, 0) / BOAT_TRAVEL_MS, 1);
+        const easedProgress = progress * progress * (3 - 2 * progress);
+        return {
+          progress,
+          boatX: Math.round(BOAT_START_X + (BOAT_DOCK_X - BOAT_START_X) * easedProgress)
+        };
+      }
+
+      function drawBoat(x, y) {
+        rect(COLORS.shadow, x + 5, y + 17, 29, 2);
+        rect(COLORS.boatDark, x + 3, y + 10, 28, 5);
+        rect(COLORS.boat, x + 5, y + 10, 25, 4);
+        rect(COLORS.boatLight, x + 8, y + 10, 18, 2);
+        rect(COLORS.boatDark, x + 7, y + 14, 22, 3);
+        rect(COLORS.boat, x + 10, y + 14, 17, 2);
+        rect(COLORS.boatDark, x + 29, y + 10, 6, 4);
+        rect(COLORS.boatLight, x + 31, y + 10, 3, 2);
+
+        rect(COLORS.boatDark, x + 10, y + 4, 16, 7);
+        rect(COLORS.cabin, x + 12, y + 4, 12, 5);
+        rect(COLORS.window, x + 15, y + 5, 6, 3);
+        rect(COLORS.cabin, x + 10, y + 3, 16, 2);
+        rect(COLORS.boatDark, x + 6, y + 9, 22, 2);
+      }
+
+      function drawScene(elapsedMs) {
+        rect(COLORS.sky, 0, 0, WIDTH, HEIGHT);
+        rect(COLORS.sun, 235, 13, 14, 10);
+        rect(COLORS.sunLight, 239, 10, 9, 3);
+        drawRiver(elapsedMs);
+        drawShore();
+        drawDock();
+
+        const motion = getAnimationState(elapsedMs);
+        const bob = Math.round(Math.sin(elapsedMs / 230));
+        drawBoat(motion.boatX, 102 + bob);
+      }
+
+      function frame(now) {
+        const elapsedMs = Math.min(Math.max(now - startTime, 0), TEST_DURATION_MS);
+        drawScene(elapsedMs);
+        if (elapsedMs < TEST_DURATION_MS) {
+          requestAnimationFrame(frame);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+  </script>
+</body>
+</html>
