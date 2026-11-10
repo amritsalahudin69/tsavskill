@@ -3,7 +3,7 @@
 **Status:** RECOVERED / RECONSTRUCTED, not an exact copy of the missing home-machine file  
 **Recovery date:** 2026-11-10  
 **Evidence:** `tsavskill.tar` snapshot supplied by the user; previously supplied TSA phase and agent-test reports.  
-**Active phase:** Phase 2E-4 — Paper Cutout Visual Skill and Fixture (completed)
+**Active phase:** Phase 2E-5 — Retro Anime Visual Skill and Fixture (completed)
 **Next authorization:** Wait for explicit user authorization before further implementation.
 
 ## 1. Goal and invariant baseline
@@ -52,6 +52,7 @@ TSA VSkills is a portable, incremental skill framework with parent `vskills`, vi
 | Phase 2E-2 — Toy Brick visual skill and fixture | Added `vidbrick` and a Three.js construction-yard animation with articulated excavator, brick loading, and a moving dump truck | **COMPLETED** for metadata, renderer structural checks, JavaScript syntax, static geometry/pivot/reach checks, and HTTP 200; browser runtime, appearance, and motion not tested |
 | Phase 2E-3 — Claymation visual skill and fixture | Added `vidclay` and a volumetric garden-delivery animation with articulated character and attached flowerpot | **COMPLETED** for metadata, renderer structural checks, JavaScript syntax, static scene/hierarchy/state/continuity checks, and HTTP 200; browser runtime, appearance, and motion not tested |
 | Phase 2E-4 — Paper Cutout visual skill and fixture | Added `vidpaper` and a layered Canvas 2D forest-crossing animation with an articulated paper fox | **COMPLETED** for metadata, Canvas structural checks, JavaScript syntax, static layer/path/articulation checks, and HTTP 200; browser runtime, visual appearance, and motion not tested |
+| Phase 2E-5 — Retro Anime visual skill and fixture | Added `vidanime` and a perspective-aligned Canvas 2D station-arrival animation | **COMPLETED** for metadata, Canvas structural checks, JavaScript syntax, static scene/face/prop/timing/track/layer checks, and HTTP 200; browser runtime, visual appearance, and motion not tested |
 
 ## 3. Current filesystem snapshot (office tar)
 
@@ -521,3 +522,17 @@ The Claymation skill, fixture, available static validation, HTTP smoke test, and
 ### Phase 2E-4 stop condition
 
 The Paper Cutout skill, fixture, available static validation, HTTP smoke test, and TSA ledger updates are complete. Stop here; browser appearance and motion require actual observation.
+
+## 34. Phase 2E-5 Retro Anime visual skill and station-arrival fixture (2026-11-10)
+
+- Added `.github/skills/vidanime/SKILL.md` with stable ID `style.retro-anime`, skill name `vidanime`, and user-facing alias `/vidanime`. Reusable guidance covers expressive ink, flat color and controlled cel shadows, painted backgrounds, key poses, attached secondary motion, readability, perspective, and optional subtle film treatment without prescribing a decade, palette, content, format, or frame rate.
+- Added `tests/fixtures/vidanime-station-arrival/index.html`, a standalone Canvas 2D scene with a traveler and suitcase, perspective platform, bench, converging train tracks, approaching generic train, station building, painted sky, and subtle static grain. It uses no external assets or runtime dependencies.
+- The scene's platform edge, track rails, and traveler route share a far-end vanishing point. The train's forward axis and wheel positions derive from the same track geometry. The traveler path stays on the platform, reaches a stop near the bench, and turns the head toward the train; both eyes remain drawn. The suitcase handle is placed at the carrying-hand anchor. Background, track/train, platform, furniture, traveler, and foreground edge use deliberate occlusion order.
+- Validation: skill metadata PASS; `validate_scene.py --renderer canvas2d` PASS; JavaScript syntax PASS; static requirements and perspective/track/wheel/suitcase/timing checks PASS; local HTTP smoke request returned `200`.
+- Browser runtime, actual visual appearance, and observed motion are **NOT_TESTED**. Static geometry checks do not prove browser rendering, perceived face-turn clarity, or motion quality.
+- The fixture's 12-second play-once timeline, 6.8-second walk, 12-pose-per-second traveler phase sampling, and 960×600 logical canvas are fixture-specific. The user-defined scene remains the skill's authority.
+- Only the requested new skill and fixture were created, and these two TSA ledgers were updated. Existing skills, fixtures, validator, scene-production capability, contracts, README, and `.gitignore` were not edited; no staging, commit, or push occurred.
+
+### Phase 2E-5 stop condition
+
+The Retro Anime skill, fixture, available static validation, HTTP smoke test, and TSA ledger updates are complete. Stop here; browser appearance and motion require actual observation.

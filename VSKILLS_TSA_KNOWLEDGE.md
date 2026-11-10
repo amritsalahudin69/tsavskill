@@ -450,3 +450,26 @@ The requested bicycle geometry correction and available static checks are comple
 
 - The 11-second play-once fixture timeline, 9-second walk, 960×600 logical canvas, and landscape framing are fixture-specific, not style defaults.
 - This fixture demonstrates one paper-cutout scene only; it does not establish a generator or prove the guidance across other scenes. No browser observation was performed.
+
+## 28. Phase 2E-5 Retro Anime visual skill and station-arrival fixture (2026-11-10)
+
+### Implementation
+
+- Read the Retro Anime section of `sub skill.txt`. Its hand-drawn ink, flat cel shadows, painted sky, restrained grain, and secondary-motion cues informed reusable style guidance. The source example's falling characters, dog, action, composition, timing, and period-specific palette were not transferred.
+- Created `.github/skills/vidanime/SKILL.md` with stable ID `style.retro-anime`, project skill name `vidanime`, and user-facing alias `/vidanime`. It keeps decade, palette, character, story, duration, frame rate, aspect ratio, and output format scene-specific, and prohibits franchise imitation.
+- Created `tests/fixtures/vidanime-station-arrival/index.html` as a standalone Canvas 2D station scene. The traveler has a readable 3/4 face, inked features, flat shadow regions, secondary hair motion, articulated limbs, and a suitcase. Painted sky/station layers, perspective platform, bench, tracks, generic approaching train, and static subtle grain establish the requested setting without external assets.
+- The platform edge, traveler route, and track geometry converge around a shared far-end point. The train's orientation and wheel offsets follow the projected rails. The traveler stops near the bench, then turns the head toward the train while both eyes remain represented. The suitcase uses the carrying-hand coordinates as its handle anchor. Track/train precede the platform occluder; furniture and traveler are drawn above the platform.
+- Fixture-only timing is 12 seconds overall, 6.8 seconds walking, and a 12-pose-per-second traveler phase sample; the train remains smoothly time-driven. These are not style defaults.
+
+### Validation and evidence
+
+- Skill metadata, stable ID, alias, and discovery marker: PASS.
+- `python3 .github/skills/scene-production/scripts/validate_scene.py --renderer canvas2d tests/fixtures/vidanime-station-arrival/index.html`: PASS for Canvas element, 2D context, drawing operation, animation-loop indicator, and backing dimensions with resize handling.
+- JavaScript syntax: PASS. Static checks for required scene objects, face persistence, suitcase/hand anchoring, walk/stop and head-turn timing, platform bounds, shared vanishing point, track/train orientation, wheel-to-rail positions, and layer order: PASS.
+- Local HTTP smoke test returned `200`.
+- Browser runtime, actual visual appearance, and observed motion: **NOT_TESTED**. Source and formula checks cannot establish visible composition, perceived head-turn readability, or rendered motion.
+
+### Scope and limits
+
+- The fixture is one stylized station-arrival example, not a generator or proof of arbitrary-scene reliability. Browser runtime and visual/motion checks remain unverified.
+- Its 960×600 logical canvas and timeline are test-specific. No external runtime assets or libraries are required.

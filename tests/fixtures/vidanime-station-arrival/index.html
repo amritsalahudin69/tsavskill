@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retro Anime Station Arrival</title>
+  <style>
+    :root {
+      color-scheme: light;
+      background: #d7d3c8;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #d7d3c8;
+    }
+
+    main {
+      width: min(96vw, 960px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 8 / 5;
+      border: 4px solid #554f4b;
+      background: #e8c99a;
+    }
+
+    #init-error {
+      margin: 0;
+      padding: 0.75rem;
+      color: #fff;
+      background: #8b2f36;
+    }
+
+    #init-error[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" width="960" height="600" role="img"
+      aria-label="A traveler with a suitcase walks across a railway platform, stops by a bench, and looks toward an approaching train.">
+      Canvas 2D is required to display this scene.
+    </canvas>
+    <p id="init-error" role="alert" hidden></p>
+  </main>
+  <script>
+    "use strict";
+
+    const canvas = document.getElementById("scene");
+    const errorPanel = document.getElementById("init-error");
+    const ctx = canvas.getContext("2d");
+    const WIDTH = 960;
+    const HEIGHT = 600;
+    const WALK_DURATION = 6.8;
+    const DURATION = 12;
+    const VANISHING_Y = 310;
+    const TRACK_CENTER_X = 705;
+    const TRACK_SLOPE = 0.547;
+    const PLATFORM_FAR_X = 700;
+    const PLATFORM_NEAR_X = 830;
+    const TRAIN_START_Y = 325;
+    const TRAIN_END_Y = 470;
+    const WALK_START = { x: 130, y: 550 };
+    const WALK_STOP = { x: 467, y: 408 };
+    const BENCH = { x: 566, y: 409 };
+
+    if (!ctx) {
+      errorPanel.textContent = "Canvas 2D could not be initialized in this browser.";
+      errorPanel.hidden = false;
+    } else {
+      const grainPattern = makeGrainPattern();
+
+      function makeGrainPattern() {
+        const grainCanvas = document.createElement("canvas");
+        grainCanvas.width = 96;
+        grainCanvas.height = 96;
+        const grainContext = grainCanvas.getContext("2d");
+        let seed = 193;
+        const random = () => {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        };
+        for (let i = 0; i < 145; i += 1) {
+          const x = random() * grainCanvas.width;
+          const y = random() * grainCanvas.height;
+          grainContext.fillStyle = i % 2
+            ? "rgba(57, 48, 42, 0.14)"
+            : "rgba(255, 242, 211, 0.2)";
+          grainContext.fillRect(x, y, 0.7 + random() * 1.1, 0.7 + random() * 1.1);
+        }
+        return ctx.createPattern(grainCanvas, "repeat");
+      }
+
+      function inkShape(makePath, fill, stroke = "#39383a", lineWidth = 2) {
+        ctx.save();
+        makePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.lineWidth = lineWidth;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function inkLine(makePath, color, width = 2) {
+        ctx.save();
+        ctx.beginPath();
+        makePath();
+        ctx.strokeStyle = "#39383a";
+        ctx.lineWidth = width + 1.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function smoothstep(value) {
+        const t = Math.max(0, Math.min(1, value));
+        return t * t * (3 - 2 * t);
+      }
+
+      function platformEdgeX(y) {
+        return PLATFORM_FAR_X
+          + ((y - VANISHING_Y) / (HEIGHT - VANISHING_Y))
+          * (PLATFORM_NEAR_X - PLATFORM_FAR_X);
+      }
+
+      function trackCenterX(y) {
+        return TRACK_CENTER_X + TRACK_SLOPE * (y - VANISHING_Y);
+      }
+
+      function trackHalfWidth(y) {
+        return 6 + (y - VANISHING_Y) * 0.18;
+      }
+
+      function drawSkyAndDistantLandscape() {
+        const sky = ctx.createLinearGradient(0, 0, 0, 420);
+        sky.addColorStop(0, "#88b7c8");
+        sky.addColorStop(0.48, "#d4c9ad");
+        sky.addColorStop(1, "#e5aa78");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        const glow = ctx.createRadialGradient(185, 164, 8, 185, 164, 118);
+        glow.addColorStop(0, "rgba(255, 229, 168, 0.9)");
+        glow.addColorStop(1, "rgba(255, 220, 163, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(48, 25, 280, 280);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(185, 164, 43, 0, Math.PI * 2);
+        }, "#f4d18c", "#e7ae6f", 1.5);
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 354);
+          ctx.lineTo(0, 297);
+          ctx.lineTo(110, 269);
+          ctx.lineTo(185, 292);
+          ctx.lineTo(290, 252);
+          ctx.lineTo(382, 291);
+          ctx.lineTo(495, 258);
+          ctx.lineTo(610, 302);
+          ctx.lineTo(710, 286);
+          ctx.lineTo(710, 370);
+          ctx.closePath();
+        }, "#849997", "#738887", 1);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 370);
+          ctx.lineTo(0, 332);
+          ctx.lineTo(102, 310);
+          ctx.lineTo(220, 334);
+          ctx.lineTo(345, 297);
+          ctx.lineTo(465, 331);
+          ctx.lineTo(598, 300);
+          ctx.lineTo(720, 340);
+          ctx.lineTo(720, 388);
+          ctx.closePath();
+        }, "#a3a89a", "#828b82", 1);
+
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = grainPattern;
+        ctx.fillRect(0, 0, WIDTH, 405);
+        ctx.restore();
+      }
+
+      function drawStationBuilding() {
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(74, 326);
+          ctx.lineTo(225, 276);
+          ctx.lineTo(598, 276);
+          ctx.lineTo(648, 311);
+          ctx.lineTo(648, 371);
+          ctx.lineTo(74, 418);
+          ctx.closePath();
+        }, "#d8c6a9", "#6a6258", 2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(74, 326);
+          ctx.lineTo(225, 276);
+          ctx.lineTo(598, 276);
+          ctx.lineTo(648, 311);
+          ctx.lineTo(228, 334);
+          ctx.closePath();
+        }, "#576d70", "#454c4d", 2);
+
+        [264, 342, 420, 498, 576].forEach((x, index) => {
+          const y = 342 + index * 3;
+          inkShape(() => {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 43, y - 3);
+            ctx.lineTo(x + 43, y + 34);
+            ctx.lineTo(x, y + 39);
+            ctx.closePath();
+          }, index % 2 ? "#96b8b5" : "#b8c5b7", "#625e57", 1.4);
+          inkLine(() => {
+            ctx.beginPath();
+            ctx.moveTo(x + 20, y - 1);
+            ctx.lineTo(x + 20, y + 37);
+          }, "#756d62", 1);
+        });
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(348, 302);
+          ctx.lineTo(510, 302);
+          ctx.lineTo(510, 325);
+          ctx.lineTo(348, 325);
+          ctx.closePath();
+        }, "#ead8b6", "#6a6258", 1.5);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(365, 314, 3, 0, Math.PI * 2);
+          ctx.arc(383, 314, 3, 0, Math.PI * 2);
+          ctx.arc(401, 314, 3, 0, Math.PI * 2);
+        }, "#8e594c", "#8e594c", 1);
+
+        inkLine(() => {
+          ctx.beginPath();
+          ctx.moveTo(116, 352);
+          ctx.lineTo(116, 430);
+          ctx.moveTo(612, 331);
+          ctx.lineTo(612, 411);
+        }, "#756d62", 3);
+      }
+
+      function drawTracksAndTies() {
+        inkShape(() => {
+          ctx.beginPath();
+          const farHalf = trackHalfWidth(VANISHING_Y) + 8;
+          const nearHalf = trackHalfWidth(HEIGHT) + 18;
+          ctx.moveTo(trackCenterX(VANISHING_Y) - farHalf, VANISHING_Y);
+          ctx.lineTo(trackCenterX(VANISHING_Y) + farHalf, VANISHING_Y);
+          ctx.lineTo(trackCenterX(HEIGHT) + nearHalf, HEIGHT);
+          ctx.lineTo(trackCenterX(HEIGHT) - nearHalf, HEIGHT);
+          ctx.closePath();
+        }, "#766f66", "#514e4a", 1.5);
+
+        for (let y = 320; y < 592;) {
+          const center = trackCenterX(y);
+          const half = trackHalfWidth(y);
+          inkLine(() => {
+            ctx.beginPath();
+            ctx.moveTo(center - half, y - half * 0.09);
+            ctx.lineTo(center + half, y + half * 0.09);
+          }, "#795b46", 2 + (y - 320) * 0.018);
+          y += 9 + (y - 320) * 0.045;
+        }
+
+        [-0.55, 0.55].forEach((side) => {
+          inkLine(() => {
+            ctx.beginPath();
+            ctx.moveTo(TRACK_CENTER_X + side * trackHalfWidth(VANISHING_Y), VANISHING_Y);
+            ctx.lineTo(trackCenterX(HEIGHT) + side * trackHalfWidth(HEIGHT), HEIGHT);
+          }, "#b9c5c0", 3.2);
+        });
+      }
+
+      function drawTrain(elapsed) {
+        const arrival = smoothstep((elapsed - 0.35) / (DURATION - 1.15));
+        const y = TRAIN_START_Y + (TRAIN_END_Y - TRAIN_START_Y) * arrival;
+        const scale = 0.2 + arrival * 0.58;
+        const x = trackCenterX(y);
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-Math.atan(TRACK_SLOPE));
+        ctx.scale(scale, scale);
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-34, -74);
+          ctx.lineTo(32, -74);
+          ctx.lineTo(35, -8);
+          ctx.lineTo(30, 7);
+          ctx.lineTo(-30, 7);
+          ctx.lineTo(-35, -8);
+          ctx.closePath();
+        }, "#8e5550", "#463d3a", 2.4);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-29, -70);
+          ctx.lineTo(28, -70);
+          ctx.lineTo(31, -59);
+          ctx.lineTo(-31, -59);
+          ctx.closePath();
+        }, "#c47b58", "#463d3a", 1.8);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-24, -51);
+          ctx.lineTo(-3, -51);
+          ctx.lineTo(-3, -30);
+          ctx.lineTo(-24, -30);
+          ctx.closePath();
+        }, "#b9d1cf", "#463d3a", 1.8);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(4, -51);
+          ctx.lineTo(25, -51);
+          ctx.lineTo(25, -30);
+          ctx.lineTo(4, -30);
+          ctx.closePath();
+        }, "#b9d1cf", "#463d3a", 1.8);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-31, -10);
+          ctx.lineTo(31, -10);
+          ctx.lineTo(27, 8);
+          ctx.lineTo(-27, 8);
+          ctx.closePath();
+        }, "#d8c69e", "#463d3a", 2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-21, -6);
+          ctx.lineTo(21, -6);
+          ctx.lineTo(18, 9);
+          ctx.lineTo(-18, 9);
+          ctx.closePath();
+        }, "#d3d9d0", "#463d3a", 1.6);
+        [-23, 23].forEach((wheelX) => {
+          inkShape(() => {
+            ctx.beginPath();
+            ctx.arc(wheelX, 5, 8, 0, Math.PI * 2);
+          }, "#3b4142", "#2f3435", 1.5);
+          inkShape(() => {
+            ctx.beginPath();
+            ctx.arc(wheelX, 5, 3.4, 0, Math.PI * 2);
+          }, "#aeb7b2", "#555653", 1);
+        });
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(-17, 1, 3.1, 0, Math.PI * 2);
+          ctx.arc(17, 1, 3.1, 0, Math.PI * 2);
+        }, "#f3d996", "#775b44", 1);
+        ctx.restore();
+      }
+
+      function drawPlatform() {
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, HEIGHT);
+          ctx.lineTo(0, 490);
+          ctx.lineTo(536, VANISHING_Y);
+          ctx.lineTo(PLATFORM_FAR_X, VANISHING_Y);
+          ctx.lineTo(PLATFORM_NEAR_X, HEIGHT);
+          ctx.closePath();
+        }, "#c8bba4", "#6d655a", 2);
+
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        for (let y = 337; y < 584; y += 34) {
+          inkLine(() => {
+            ctx.beginPath();
+            ctx.moveTo(30, y + (y - 337) * 0.56);
+            ctx.lineTo(platformEdgeX(y), y);
+          }, "#f2dfbd", 1.2);
+        }
+        ctx.restore();
+
+        inkLine(() => {
+          ctx.beginPath();
+          ctx.moveTo(PLATFORM_FAR_X, VANISHING_Y);
+          ctx.lineTo(PLATFORM_NEAR_X, HEIGHT);
+        }, "#e4bd70", 5);
+        inkLine(() => {
+          ctx.beginPath();
+          ctx.moveTo(PLATFORM_FAR_X + 9, VANISHING_Y);
+          ctx.lineTo(PLATFORM_NEAR_X + 8, HEIGHT);
+        }, "#8a7560", 1.8);
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 586);
+          ctx.lineTo(PLATFORM_NEAR_X - 4, 586);
+          ctx.lineTo(PLATFORM_NEAR_X, 600);
+          ctx.lineTo(0, 600);
+          ctx.closePath();
+        }, "#827c70", "#57544e", 1.2);
+      }
+
+      function drawBench() {
+        const scale = 0.74;
+        ctx.save();
+        ctx.translate(BENCH.x, BENCH.y);
+        ctx.scale(scale, scale);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-48, -18);
+          ctx.lineTo(34, -34);
+          ctx.lineTo(57, -25);
+          ctx.lineTo(-25, -8);
+          ctx.closePath();
+        }, "#956c53", "#4d423a", 2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-47, -38);
+          ctx.lineTo(35, -54);
+          ctx.lineTo(36, -39);
+          ctx.lineTo(-46, -23);
+          ctx.closePath();
+        }, "#b87b57", "#4d423a", 2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-39, -18);
+          ctx.lineTo(-34, -18);
+          ctx.lineTo(-31, 1);
+          ctx.lineTo(-37, 1);
+          ctx.closePath();
+          ctx.moveTo(27, -31);
+          ctx.lineTo(33, -32);
+          ctx.lineTo(39, -5);
+          ctx.lineTo(33, -4);
+          ctx.closePath();
+          ctx.moveTo(-29, -40);
+          ctx.lineTo(-23, -41);
+          ctx.lineTo(-21, -20);
+          ctx.lineTo(-27, -19);
+          ctx.closePath();
+          ctx.moveTo(33, -52);
+          ctx.lineTo(39, -53);
+          ctx.lineTo(43, -34);
+          ctx.lineTo(37, -33);
+          ctx.closePath();
+        }, "#705441", "#4d423a", 1.6);
+        ctx.restore();
+      }
+
+      function limb(x1, y1, x2, y2, width, color) {
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = "#443d3b";
+        ctx.lineWidth = width + 3;
+        ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function suitcaseHand(phase, gait) {
+        return {
+          x: 31 + Math.sin(phase) * 3 * gait,
+          y: -42 + Math.cos(phase) * 1.5 * gait,
+        };
+      }
+
+      function drawSuitcase(hand, phase, gait) {
+        ctx.save();
+        ctx.translate(hand.x, hand.y);
+        ctx.rotate(Math.sin(phase) * 0.045 * gait);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.roundRect(-13, 8, 27, 29, 4);
+        }, "#9d6152", "#403b3a", 2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.roundRect(-5, 0, 10, 10, 2);
+        }, "#b47a5f", "#403b3a", 1.5);
+        inkLine(() => {
+          ctx.beginPath();
+          ctx.moveTo(-8, 12);
+          ctx.lineTo(-8, 31);
+        }, "#d6aa73", 1.4);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(9, 22, 1.8, 0, Math.PI * 2);
+        }, "#ead3a5", "#6f5545", 0.8);
+        ctx.restore();
+      }
+
+      function drawTraveler(x, y, scale, phase, gait, headTurn) {
+        const bob = Math.sin(phase * 2) * 1.8 * gait;
+        const hand = suitcaseHand(phase, gait);
+        ctx.save();
+        ctx.translate(x, y + bob);
+        ctx.scale(scale, scale);
+
+        const rearPhase = phase + Math.PI;
+        const rearFoot = {
+          x: -7 + Math.sin(rearPhase) * 13 * gait,
+          y: -Math.max(0, Math.cos(rearPhase)) * 5 * gait,
+        };
+        const frontFoot = {
+          x: 8 + Math.sin(phase) * 13 * gait,
+          y: -Math.max(0, Math.cos(phase)) * 5 * gait,
+        };
+        limb(-7, -35, -10 + rearFoot.x * 0.48, -18, 8, "#52677b");
+        limb(-10 + rearFoot.x * 0.48, -18, rearFoot.x, rearFoot.y, 6, "#354352");
+        limb(8, -35, 7 + frontFoot.x * 0.48, -18, 8, "#536a80");
+        limb(7 + frontFoot.x * 0.48, -18, frontFoot.x, frontFoot.y, 6, "#354352");
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.ellipse(rearFoot.x + 3, rearFoot.y, 8, 3.2, -0.08, 0, Math.PI * 2);
+        }, "#9f5d4b", "#443d3b", 1.2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.ellipse(frontFoot.x + 3, frontFoot.y, 8, 3.2, -0.08, 0, Math.PI * 2);
+        }, "#b36b52", "#443d3b", 1.2);
+
+        limb(-8, -73, -18 - Math.sin(phase) * 4 * gait, -57, 8, "#c98c5f");
+        limb(-18 - Math.sin(phase) * 4 * gait, -57, -19 - Math.sin(phase) * 8 * gait, -41, 6, "#9d6151");
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(-19 - Math.sin(phase) * 8 * gait, -41, 4.2, 0, Math.PI * 2);
+        }, "#e7b28b", "#443d3b", 1.2);
+
+        limb(7, -73, 21, -57, 9, "#c8895c");
+        limb(21, -57, hand.x, hand.y, 6.5, "#9b5b4c");
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-17, -77);
+          ctx.quadraticCurveTo(-8, -83, 4, -78);
+          ctx.lineTo(17, -66);
+          ctx.lineTo(12, -38);
+          ctx.quadraticCurveTo(-1, -32, -15, -39);
+          ctx.closePath();
+        }, "#567186", "#403b3a", 2.2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(1, -67);
+          ctx.lineTo(13, -62);
+          ctx.lineTo(10, -43);
+          ctx.quadraticCurveTo(4, -38, -1, -40);
+          ctx.lineTo(-2, -54);
+          ctx.closePath();
+        }, "#40576a", "#403b3a", 1.2);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(1, -77);
+          ctx.lineTo(13, -68);
+          ctx.lineTo(8, -58);
+          ctx.lineTo(-1, -66);
+          ctx.closePath();
+        }, "#bd7758", "#403b3a", 1.4);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-17, -43);
+          ctx.quadraticCurveTo(-1, -37, 13, -43);
+          ctx.lineTo(10, -35);
+          ctx.quadraticCurveTo(-1, -30, -15, -36);
+          ctx.closePath();
+        }, "#465d70", "#403b3a", 1.6);
+
+        ctx.save();
+        ctx.translate(1, -91 + bob * 0.35);
+        ctx.rotate(headTurn * 0.55);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-14, -2);
+          ctx.quadraticCurveTo(-18, -20, -3, -29);
+          ctx.quadraticCurveTo(13, -35, 25, -22);
+          ctx.lineTo(27, -5);
+          ctx.lineTo(19, 8);
+          ctx.quadraticCurveTo(3, 14, -8, 7);
+          ctx.closePath();
+        }, "#e7b28b", "#403b3a", 1.8);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(-16, -8);
+          ctx.quadraticCurveTo(-19, -31, 1, -36);
+          ctx.quadraticCurveTo(18, -38, 28, -22);
+          ctx.lineTo(18, -24);
+          ctx.lineTo(10, -18);
+          ctx.lineTo(3, -23);
+          ctx.lineTo(-3, -15);
+          ctx.lineTo(-10, -18);
+          ctx.lineTo(-8, 1);
+          ctx.closePath();
+        }, "#493d3a", "#332f30", 1.8);
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.ellipse(5, -7, 2.4, 3.5, 0, 0, Math.PI * 2);
+          ctx.ellipse(17, -7, 2.2, 3.2, 0, 0, Math.PI * 2);
+        }, "#fbefd9", "#403b3a", 1);
+        inkShape(() => {
+          const pupilShift = headTurn * 2;
+          ctx.beginPath();
+          ctx.arc(5 + pupilShift, -7, 1.3, 0, Math.PI * 2);
+          ctx.arc(17 + pupilShift, -7, 1.3, 0, Math.PI * 2);
+        }, "#34343a", "#34343a", 0.8);
+        inkLine(() => {
+          ctx.beginPath();
+          ctx.moveTo(24, -5);
+          ctx.lineTo(28, -3);
+          ctx.moveTo(15, 3);
+          ctx.quadraticCurveTo(19, 5, 22, 2);
+        }, "#654642", 1.2);
+        ctx.restore();
+
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.arc(hand.x, hand.y, 4.1, 0, Math.PI * 2);
+        }, "#e7b28b", "#443d3b", 1.2);
+        drawSuitcase(hand, phase, gait);
+
+        inkLine(() => {
+          const wind = Math.sin(phase * 0.7) * 2 * gait;
+          ctx.beginPath();
+          ctx.moveTo(-13, -81);
+          ctx.quadraticCurveTo(-25 - wind, -78, -31 - wind, -70);
+          ctx.moveTo(-13, -75);
+          ctx.quadraticCurveTo(-21 - wind, -71, -25 - wind, -63);
+        }, "#493d3a", 2);
+        ctx.restore();
+      }
+
+      function drawForegroundPlatform() {
+        inkShape(() => {
+          ctx.beginPath();
+          ctx.moveTo(0, 600);
+          ctx.lineTo(0, 584);
+          ctx.lineTo(PLATFORM_NEAR_X, 584);
+          ctx.lineTo(PLATFORM_NEAR_X, 600);
+          ctx.closePath();
+        }, "#77746d", "#4e4b47", 1.5);
+      }
+
+      function drawScene(elapsed) {
+        drawSkyAndDistantLandscape();
+        drawStationBuilding();
+        drawTracksAndTies();
+        drawTrain(elapsed);
+        drawPlatform();
+        drawBench();
+
+        const walk = smoothstep(elapsed / WALK_DURATION);
+        const x = WALK_START.x + (WALK_STOP.x - WALK_START.x) * walk;
+        const y = WALK_START.y + (WALK_STOP.y - WALK_START.y) * walk;
+        const scale = 0.70 + (y - WALK_STOP.y) * 0.0021;
+        const walkIn = Math.min(1, elapsed / 0.5);
+        const walkOut = Math.min(1, Math.max(0, (WALK_DURATION - elapsed) / 0.65));
+        const gait = elapsed < WALK_DURATION ? Math.min(walkIn, walkOut) : 0;
+        const heldPoseTime = Math.floor(elapsed * 12) / 12;
+        const headTurn = smoothstep((elapsed - 7.1) / 1.05);
+        drawTraveler(x, y, scale, heldPoseTime * 7.2, gait, headTurn);
+        drawForegroundPlatform();
+
+        ctx.save();
+        ctx.globalAlpha = 0.075;
+        ctx.fillStyle = grainPattern;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.restore();
+      }
+
+      function resizeCanvas() {
+        const bounds = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(bounds.width * ratio));
+        canvas.height = Math.max(1, Math.round(bounds.height * ratio));
+        ctx.setTransform(canvas.width / WIDTH, 0, 0, canvas.height / HEIGHT, 0, 0);
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      let startTime = null;
+      function animate(now) {
+        if (startTime === null) startTime = now;
+        const elapsed = Math.min(DURATION, (now - startTime) / 1000);
+        drawScene(elapsed);
+        if (elapsed < DURATION) requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>
