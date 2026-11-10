@@ -29,8 +29,7 @@ node_modules/
 
 
 # Unreviewed original source prompts and protocol package
-/video TSA skill/
-/video TSA skill.zip
+
 /sub skill.txt
 /TSA_Master agent CANONICAL_3D_CHARACTER_BUILD_PROMPT_v1.0.0.md
 /TSA_Mater web CANONICAL_3D_CHARACTER_CHAT_PROMPT_v1.0.1.md
