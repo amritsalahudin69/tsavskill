@@ -27,9 +27,7 @@ venv/
 # Node dependencies
 node_modules/
 
-# TSA-local development records
-/VSKILLS_TSA_STATE.md
-/VSKILLS_TSA_KNOWLEDGE.md
+
 
 # Unreviewed original source prompts and protocol package
 /video TSA skill/

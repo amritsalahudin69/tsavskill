@@ -22,7 +22,19 @@ Production mode determines output type. Operation capabilities determine the wor
 
 ## Visual styles and scene inputs
 
-Miniature Diorama and Retro PS2 are intended visual styles. They describe presentation techniques, not required characters, stories, actions, or environments. Scene content is always user-defined; never substitute an illustrative example for missing scene input. The initial design permits at most one primary style.
+Visual styles describe presentation techniques, not required characters, stories, actions, or environments. Scene content is always user-defined; never substitute an illustrative example for missing scene input. The initial design permits at most one primary style.
+
+### Installed style child: Miniature Diorama
+
+- **Stable ID:** `style.miniature-diorama`
+- **User-facing alias:** `/vidmindi` (not a registered native slash command)
+- **Installed instructions:** `.github/skills/vidmindi/SKILL.md`
+- **Status:** implemented, tested, and discoverable as an instruction-only child skill.
+- **Scope:** visual-style guidance for a user-defined scene; it is not video generation.
+
+When a user requests Miniature Diorama, select and guide the host toward the installed `vidmindi` child skill so its instructions can be loaded. Preserve the user's subjects, environment, actions, story, and constraints; use the child for visual presentation guidance only. Do not claim a scene or video was generated.
+
+Other visual styles, including Retro PS2, remain unimplemented; do not claim an installed child for them.
 
 ## Character source authority
 
@@ -38,8 +50,8 @@ When integrating canonical character HTML, inspect and preserve its identity, ge
 
 ## Implementation status and fallback
 
-This parent instruction file is the only VSkills skill created in this iteration. Visual-style child skills, aliases as native commands, routing automation, and video/character production execution are not implemented here. Do not claim a capability ran merely because its instructions were read; report limitations and checks honestly.
+The installed Miniature Diorama child is discoverable through host skill loading, but this parent does not implement a registry, routing automation, native slash command, or video/character production execution. Do not claim a capability ran merely because its instructions were read; report limitations and checks honestly.
 
 If no native command or router is available, use these instructions manually: identify the user's requested outcome, scene and source inputs, mode, operation, and optional style; follow applicable source-authority constraints; and explain any unsupported execution or validation.
 
-TSA_VSKILLS_DISCOVERY_MARKER: VSKILLS_PARENT_2A
+TSA_VSKILLS_DISCOVERY_MARKER: VSKILLS_PARENT_2B_R
