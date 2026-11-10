@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Risograph Lighthouse Signal</title>
+    <style>
+      :root {
+        color-scheme: light;
+        background: #efe8d7;
+        font-family: system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #efe8d7;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      canvas {
+        display: block;
+        width: min(100vw, 1200px);
+        height: min(100vh, 800px);
+        background: #efe8d7;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene" width="960" height="600" aria-label="Risograph lighthouse signal animation"></canvas>
+
+    <script>
+      const canvas = document.getElementById('scene');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+
+      const sceneZones = {
+        skyTop: 0,
+        skyBottom: 230,
+        distantLandTop: 200,
+        distantLandBottom: 238,
+        oceanTop: 230,
+        oceanBottom: H,
+        cliffLeft: 0,
+        cliffRight: 360,
+        cliffTop: 255,
+        cliffBottom: H,
+        lighthouseX: 250,
+        lighthouseY: 214,
+        lighthouseBaseY: 326,
+        beaconOriginX: 250,
+        beaconOriginY: 120,
+        boatMinX: 620,
+        boatMaxX: 860,
+        boatMinY: 340,
+        boatMaxY: 430
+      };
+
+      const palette = {
+        paper: '#f1ead7',
+        sky: '#f4f0e6',
+        distant: '#c9b79d',
+        seaDeep: '#224d63',
+        seaMid: '#3b7286',
+        seaLight: '#9bbbca',
+        cliff: '#5b4b43',
+        cliffLight: '#7d6b60',
+        shore: '#9a8a7b',
+        lighthouse: '#dcd4c3',
+        lighthouseDark: '#b9a88f',
+        lantern: '#f3d777',
+        lanternGlass: '#f7efc6',
+        boat: '#d9654a',
+        boatDark: '#a33f38',
+        boatTrim: '#f3e0a2',
+        inkOne: '#2a3b45',
+        inkTwo: '#d87354',
+        inkThree: '#49806f',
+        haze: 'rgba(255, 243, 205, 0.18)',
+        seaOverlay: 'rgba(26, 68, 82, 0.22)'
+      };
+
+      const registration = {
+        ocean: { x: 0, y: 0 },
+        cliff: { x: 0, y: 0 },
+        lighthouse: { x: 0, y: 0 },
+        boat: { x: 0, y: 0 },
+        beacon: { x: 0, y: 0 }
+      };
+
+      function makePaperTexture() {
+        const paper = document.createElement('canvas');
+        paper.width = 420;
+        paper.height = 280;
+        const p = paper.getContext('2d');
+        p.fillStyle = palette.paper;
+        p.fillRect(0, 0, paper.width, paper.height);
+
+        for (let i = 0; i < 2200; i += 1) {
+          const x = (i * 17) % paper.width;
+          const y = (i * 13 + 7) % paper.height;
+          const alpha = 0.04 + ((i % 9) / 70);
+          p.fillStyle = `rgba(86, 68, 50, ${alpha})`;
+          p.fillRect(x, y, 1.2, 1.2);
+        }
+
+        for (let i = 0; i < 170; i += 1) {
+          const x = (i * 29) % paper.width;
+          const y = (i * 31) % paper.height;
+          const radius = 2 + (i % 9);
+          p.beginPath();
+          p.fillStyle = `rgba(133, 115, 90, ${0.02 + (i % 5) * 0.015})`;
+          p.arc(x, y, radius, 0, Math.PI * 2);
+          p.fill();
+        }
+
+        return paper;
+      }
+
+      const paperTexture = makePaperTexture();
+
+      function drawPaper() {
+        ctx.fillStyle = palette.paper;
+        ctx.fillRect(0, 0, W, H);
+        ctx.drawImage(paperTexture, 0, 0, W, H);
+      }
+
+      function drawHalftone(ctx2d, x, y, w, h, spacing, color, alpha) {
+        ctx2d.save();
+        ctx2d.beginPath();
+        ctx2d.rect(x, y, w, h);
+        ctx2d.clip();
+        ctx2d.fillStyle = color;
+        ctx2d.globalAlpha = alpha;
+        const dot = 4;
+        for (let px = x; px < x + w; px += spacing) {
+          for (let py = y; py < y + h; py += spacing) {
+            const p = (px + py) % 10;
+            if (p === 0 || p === 3 || p === 7) {
+              ctx2d.beginPath();
+              ctx2d.arc(px + spacing * 0.35, py + spacing * 0.35, dot * 0.5, 0, Math.PI * 2);
+              ctx2d.fill();
+            }
+          }
+        }
+        ctx2d.restore();
+      }
+
+      function drawSky() {
+        ctx.fillStyle = palette.sky;
+        ctx.fillRect(0, 0, W, sceneZones.skyBottom);
+
+        ctx.fillStyle = '#efe6d0';
+        ctx.beginPath();
+        ctx.moveTo(0, 185);
+        ctx.lineTo(230, 150);
+        ctx.lineTo(W, 138);
+        ctx.lineTo(W, 206);
+        ctx.lineTo(0, 206);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function drawDistantLand() {
+        ctx.fillStyle = palette.distant;
+        ctx.beginPath();
+        ctx.moveTo(0, 210);
+        ctx.lineTo(120, 202);
+        ctx.lineTo(240, 208);
+        ctx.lineTo(360, 205);
+        ctx.lineTo(560, 212);
+        ctx.lineTo(700, 208);
+        ctx.lineTo(W, 212);
+        ctx.lineTo(W, 236);
+        ctx.lineTo(0, 236);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function drawOcean(time) {
+        const oceanTop = sceneZones.oceanTop;
+        const water = ctx.createLinearGradient(0, oceanTop, 0, H);
+        water.addColorStop(0, palette.seaLight);
+        water.addColorStop(0.52, palette.seaMid);
+        water.addColorStop(1, palette.seaDeep);
+        ctx.fillStyle = water;
+        ctx.fillRect(0, oceanTop, W, H - oceanTop);
+
+        ctx.save();
+        ctx.fillStyle = palette.seaOverlay;
+        for (let i = 0; i < 9; i += 1) {
+          const y = oceanTop + 12 + i * 22;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= W + 30; x += 24) {
+            const wave = Math.sin((x * 0.04) + time * 0.9 + i * 1.7) * (3.2 + i * 1.05);
+            ctx.lineTo(x, y + wave);
+          }
+          ctx.lineTo(W, H);
+          ctx.lineTo(0, H);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        drawHalftone(ctx, 0, oceanTop + 8, W, H - oceanTop - 8, 10, palette.seaDeep, 0.16);
+      }
+
+      function drawCliff() {
+        ctx.save();
+        ctx.translate(registration.cliff.x, registration.cliff.y);
+
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        ctx.lineTo(0, 302);
+        ctx.lineTo(54, 286);
+        ctx.lineTo(104, 268);
+        ctx.lineTo(162, 246);
+        ctx.lineTo(220, 240);
+        ctx.lineTo(268, 246);
+        ctx.lineTo(324, 264);
+        ctx.lineTo(360, 274);
+        ctx.lineTo(360, H);
+        ctx.closePath();
+        ctx.fillStyle = palette.cliff;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(72, 328);
+        ctx.lineTo(158, 286);
+        ctx.lineTo(214, 272);
+        ctx.lineTo(286, 278);
+        ctx.lineTo(342, 306);
+        ctx.lineTo(330, 344);
+        ctx.lineTo(222, 356);
+        ctx.lineTo(120, 350);
+        ctx.closePath();
+        ctx.fillStyle = palette.cliffLight;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(230, 242);
+        ctx.lineTo(286, 246);
+        ctx.lineTo(300, 286);
+        ctx.lineTo(244, 294);
+        ctx.lineTo(220, 272);
+        ctx.closePath();
+        ctx.fillStyle = '#3b2d2d';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(140, 346);
+        ctx.lineTo(176, 324);
+        ctx.lineTo(204, 338);
+        ctx.lineTo(188, 364);
+        ctx.lineTo(150, 368);
+        ctx.closePath();
+        ctx.fillStyle = '#4b3b39';
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawLighthouse() {
+        const x = sceneZones.lighthouseX;
+        const y = sceneZones.lighthouseY;
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.fillStyle = palette.lighthouseDark;
+        ctx.beginPath();
+        ctx.moveTo(-18, 96);
+        ctx.lineTo(18, 96);
+        ctx.lineTo(26, 8);
+        ctx.lineTo(-26, 8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = palette.lighthouse;
+        ctx.beginPath();
+        ctx.moveTo(-13, 96);
+        ctx.lineTo(13, 96);
+        ctx.lineTo(18, -112);
+        ctx.lineTo(-18, -112);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#e7d9ba';
+        ctx.fillRect(-18, -120, 36, 18);
+
+        ctx.fillStyle = palette.lanternGlass;
+        ctx.fillRect(-20, -104, 40, 24);
+
+        ctx.fillStyle = '#d6b267';
+        ctx.fillRect(-10, -97, 20, 8);
+
+        ctx.fillStyle = '#8d6d52';
+        ctx.fillRect(-22, 96, 44, 12);
+
+        ctx.fillStyle = '#e0d2b5';
+        ctx.fillRect(-30, 108, 60, 10);
+
+        ctx.fillStyle = '#b39d84';
+        ctx.fillRect(-6, 120, 12, 20);
+
+        ctx.restore();
+      }
+
+      function drawBeacon(t) {
+        const beamAngle = -Math.PI / 2 + Math.sin(t * 0.9) * 0.72;
+        const originX = sceneZones.beaconOriginX;
+        const originY = sceneZones.beaconOriginY;
+
+        ctx.save();
+        ctx.translate(originX, originY);
+        ctx.rotate(beamAngle);
+        const beamGradient = ctx.createRadialGradient(0, 0, 10, 0, 0, 200);
+        beamGradient.addColorStop(0, 'rgba(250, 233, 170, 0.8)');
+        beamGradient.addColorStop(0.2, 'rgba(250, 233, 170, 0.38)');
+        beamGradient.addColorStop(1, 'rgba(250, 233, 170, 0)');
+        ctx.fillStyle = beamGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(180, -26);
+        ctx.lineTo(200, 22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(originX, originY);
+        ctx.fillStyle = palette.lantern;
+        ctx.fillRect(-8, -8, 16, 16);
+        ctx.restore();
+      }
+
+      function drawBoat(time) {
+        const boatProgress = (time * 0.055) % 1.12;
+        const x = 620 + boatProgress * 210;
+        const y = 382 + Math.sin(time * 1.35) * 7;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.strokeStyle = '#1b313d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-24, 12);
+        ctx.lineTo(42, 12);
+        ctx.stroke();
+
+        ctx.fillStyle = palette.boatDark;
+        ctx.beginPath();
+        ctx.moveTo(-28, 12);
+        ctx.lineTo(-10, 28);
+        ctx.lineTo(30, 28);
+        ctx.lineTo(16, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = palette.boat;
+        ctx.beginPath();
+        ctx.moveTo(-12, 12);
+        ctx.lineTo(6, -18);
+        ctx.lineTo(28, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = palette.boatTrim;
+        ctx.beginPath();
+        ctx.moveTo(10, -12);
+        ctx.lineTo(24, -4);
+        ctx.lineTo(10, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = palette.boatTrim;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(10, -12);
+        ctx.lineTo(10, 6);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawBoundedInkAccents() {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(610, 330, 190, 140);
+        ctx.clip();
+
+        ctx.fillStyle = 'rgba(126, 131, 134, 0.10)';
+        ctx.beginPath();
+        ctx.moveTo(618, 370);
+        ctx.lineTo(686, 356);
+        ctx.lineTo(744, 364);
+        ctx.lineTo(728, 392);
+        ctx.lineTo(648, 400);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(216, 115, 84, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(646, 350);
+        ctx.lineTo(704, 342);
+        ctx.lineTo(748, 356);
+        ctx.lineTo(732, 382);
+        ctx.lineTo(662, 392);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(73, 128, 111, 0.10)';
+        ctx.beginPath();
+        ctx.moveTo(220, 246);
+        ctx.lineTo(302, 242);
+        ctx.lineTo(314, 282);
+        ctx.lineTo(232, 288);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function sampleSeaPixels() {
+        const points = [
+          [720, 430],
+          [790, 470],
+          [860, 500],
+          [690, 380],
+          [780, 420]
+        ];
+        const image = ctx.getImageData(0, 0, W, H).data;
+        let hits = 0;
+
+        for (const [px, py] of points) {
+          const index = ((Math.round(py) * W) + Math.round(px)) * 4;
+          const r = image[index];
+          const g = image[index + 1];
+          const b = image[index + 2];
+          const isSea = b > g + 20 && b > r + 10;
+          if (isSea) hits += 1;
+        }
+
+        return { hits, points, total: points.length };
+      }
+
+      function spatialAudit() {
+        const oceanVisible = sceneZones.oceanTop < sceneZones.oceanBottom;
+        const cliffWithinOceanZone = sceneZones.cliffLeft >= 0 && sceneZones.cliffRight <= W && sceneZones.cliffTop >= sceneZones.oceanTop;
+        const lighthouseBaseInsideCliff = sceneZones.lighthouseX >= sceneZones.cliffLeft && sceneZones.lighthouseX <= sceneZones.cliffRight && sceneZones.lighthouseBaseY > sceneZones.oceanTop;
+        const beaconOriginMatchesLighthouse = sceneZones.beaconOriginX === sceneZones.lighthouseX && sceneZones.beaconOriginY === sceneZones.lighthouseY - 94;
+        const boatWithinOcean = sceneZones.boatMinX > sceneZones.cliffRight && sceneZones.boatMaxX < W && sceneZones.boatMinY > sceneZones.oceanTop && sceneZones.boatMaxY < H;
+        const noLargeOceanCover = sceneZones.oceanTop < sceneZones.oceanBottom && sceneZones.oceanTop < sceneZones.cliffTop;
+        const pixelCheck = sampleSeaPixels();
+
+        return {
+          oceanVisible,
+          cliffWithinOceanZone,
+          lighthouseBaseInsideCliff,
+          beaconOriginMatchesLighthouse,
+          boatWithinOcean,
+          noLargeOceanCover,
+          seaPixels: pixelCheck.hits,
+          seaSamples: pixelCheck.total
+        };
+      }
+
+      function drawScene(time) {
+        drawPaper();
+        drawSky();
+        drawDistantLand();
+        drawOcean(time);
+        drawCliff();
+        drawLighthouse();
+        drawBeacon(time);
+        drawBoat(time);
+        drawBoundedInkAccents();
+
+        const audit = spatialAudit();
+        if (audit.seaPixels < 3) {
+          console.warn('Risograph sea pixel audit failed', audit);
+        }
+
+        ctx.fillStyle = palette.haze;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      function animate(now) {
+        const time = now * 0.001;
+        drawScene(time);
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>

@@ -473,3 +473,223 @@ The requested bicycle geometry correction and available static checks are comple
 
 - The fixture is one stylized station-arrival example, not a generator or proof of arbitrary-scene reliability. Browser runtime and visual/motion checks remain unverified.
 - Its 960×600 logical canvas and timeline are test-specific. No external runtime assets or libraries are required.
+
+## 29. Phase 2E-5R Retro Anime station-arrival repair (2026-11-10)
+
+### Root cause of the perspective failure
+
+The previous fixture used a platform, track, and train relationship that compressed the track geometry toward the right edge, making the platform look like an oversized trapezoid rather than a believable station deck. Its station building depth cues were too weak, the traveler and train were under-scaled relative to the platform, and the empty screen area around the subject cluster weakened story readability. The scene thus read as primitive vector geometry instead of a retro anime station composition.
+
+### New scene coordinate and projection design
+
+The repaired scene uses a single horizon and vanishing relationship for the platform edge, rails, station building, traveler route, bench, and train. The platform remains a bounded ground plane in an oblique three-quarter view instead of a full-frame trapezoid; the track centerline and rail spacing share a consistent vanishing point; the bench holds a believable station-side position; and the building sits left and back as depth context rather than overwhelming the foreground platform.
+
+### Traveler and train scale corrections
+
+The traveler is deliberately larger and closer to the camera in the mid-ground, the suitcase remains anchored to the carrying hand, and the train is visually substantial enough to read as an approaching vehicle. The train and traveler are both sized relative to the platform and rails, so their scale remains consistent with the station geometry and the user story.
+
+### Anime visual improvements
+
+The repaired version adds cleaner inked silhouettes, a clearer face with readable eyes and mouth, a stronger hair and jacket read, controlled cel-shadow shapes, a more coherent painted-background station, more intentional layering, and a more legible foreground/background relationship. The scene keeps a restrained, warm retro-anime palette without relying on noisy gradients or overdone effects.
+
+### Animation continuity results
+
+The traveler still walks across the platform, carries the suitcase, stops near the bench, turns toward the train, and the train advances along the visible rail geometry. The same path and perspective system remain in force throughout the sequence, so there are no major jumps in size, position, or support contact.
+
+### Static validation outcomes
+
+- JavaScript syntax check: PASS (`node --check` on extracted inline script)
+- Canvas structural validation: PASS (`validate_scene.py --renderer canvas2d tests/fixtures/vidanime-station-arrival/index.html`)
+- Local HTTP smoke test: PASS (`curl -I http://127.0.0.1:8123/tests/fixtures/vidanime-station-arrival/index.html` returned `200 OK`)
+- Browser runtime, visual appearance, and motion were not observed in this session; those remain **NOT_TESTED** and cannot be treated as visual PASS.
+
+### Remaining manual visual checks
+
+The final acceptance step is still a human browser check: verify the train reads as a rail vehicle, the face remains readable while turning, the suitcase remains attached correctly, the platform is not dominant or flat, and the overall composition reads as a convincing retro anime station-arrival scene rather than a simplified vector layout.
+
+## 30. Phase 2E-6 Low-Poly 3D visual skill and mountain cable-car fixture (2026-11-10)
+
+### Low-Poly 3D guidance
+
+The new `vidlowpoly` skill defines a reusable low-poly 3D visual style focused on genuine volumetric geometry, faceted silhouettes, flat shading, consistent proportions, functional support/contact, deliberate lighting, and coherent world-space depth. It does not impose a mandatory scene, fixed camera, or specific duration; instead it remains adaptable to arbitrary user-defined scenes.
+
+### Terrain and scene construction
+
+The fixture uses a single coherent world coordinate system with mountainous terrain generated from a height function, low-poly evergreen trees, a lower station, an upper station, support towers, and a suspended cable. The terrain has true 3D depth, the stations sit at different elevations, and the tower and station placements remain aligned to the cable route and world scale.
+
+### Cable and cabin path implementation
+
+The scene defines one Catmull-Rom cable path and reuses it for the visible cable mesh, the cabin movement, and the hanger placement. The cabin position is derived from normalized path progress with smooth acceleration and deceleration, so there is no teleported jump. The orientation follows the tangential direction of the cable route, and the cabin remains suspended on the cable rather than floating independently.
+
+### Geometric clearance checks
+
+The path and tower positions are shared; tower geometry is aligned to cable points, and cabin-to-tower clearance is maintained by the route design. Station entrances align with the route and cabin stop, and the geometry does not intersect the cable or towers during movement. The cable remains visually continuous and connected to the cabin through the hanger.
+
+### Static validation outcomes
+
+- Skill metadata and stable ID: PASS.
+- `python3 .github/skills/scene-production/scripts/validate_scene.py --renderer threejs tests/fixtures/vidlowpoly-mountain-cablecar/index.html`: PASS for Three.js scene construction, camera, renderer, render call, and animation loop detection.
+- JavaScript module syntax: PASS (`node --check` on extracted module).
+- Shared path / hanger / support / route checks: PASS in source logic.
+- Local HTTP smoke test: PASS (`200 OK`).
+- Browser runtime, visual appearance, and observed motion remain **NOT_TESTED** and cannot be treated as visual PASS.
+
+### Known limitations
+
+This is a single fixture proving the workflow, not a universal generator. The scene demonstrates one low-poly mountain cable-car narrative; it does not establish a general low-poly 3D engine or guarantee appearance quality across arbitrary user scenes. Manual browser acceptance remains the final gate.
+
+## 31. Phase 2E-7 Risograph visual skill and lighthouse-signal fixture (2026-11-10)
+
+### Risograph guidance
+
+The new `vidriso` skill defines a reusable Risograph visual style focused on limited spot-ink palettes, layered print construction, paper-based backgrounds, controlled overprint, halftone/stipple texture, deterministic registration offsets, and strong silhouette hierarchy. It does not force a specific palette, subject, story, duration, or aspect ratio, and it does not treat print simulation as a random noise filter over ordinary vector art.
+
+### Ink-layer architecture
+
+The fixture separates the paper background, ocean pass, cliff pass, lighthouse pass, beacon sweep, and sailboat pass into distinct logical drawing steps. The paper texture is generated once and cached; the ink geometry remains stable while the boat and beacon move across the scene. Pressed registration offsets are intentionally consistent and deterministic, providing a print-like layered effect without per-frame jitter or unstable texture drift.
+
+### Halftone, overprint, grain, and misregistration implementation
+
+The ocean and static print surfaces use halftone dots or controlled tonal overlays to emulate layered screen-print density and faint overprint interactions. A warmer paper grain sits beneath the scene, and selected overlapping regions receive color mixing that reads like print overprint. The lighthouse tower and boat maintain readable silhouettes, and the misregistration remains subtle, consistent, and scene-appropriate.
+
+### Lighthouse and sailboat scene construction
+
+The scene uses a single coherent illustration plane with a fixed lighthouse on a cliff, a rotating beacon that sweeps across the sea, a layered coastline, and a small sailboat travelling past the shore. The boat moves smoothly from offshore to a later position without teleportation, while the lighthouse remains grounded on the cliff and the sea layering stays aligned with the horizon and coastline.
+
+### Animation and spatial consistency
+
+The motion is elapsed-time driven and continuous. The lighthouse beacon rotates around its intended pivot, the boat advances along a visible route, the overprint and textured layers stay coherent, and the paper texture remains fixed while the moving forms are layered above it. The scene remains readable, avoids fake HUD overlays, and preserves foreground/background order.
+
+### Static validation outcomes
+
+- Skill metadata and stable ID: PASS.
+- `python3 .github/skills/scene-production/scripts/validate_scene.py --renderer canvas2d tests/fixtures/vidriso-lighthouse-signal/index.html`: PASS for Canvas element, 2D context, drawing operations, and animation-loop detection.
+- JavaScript syntax: PASS (`node --check` on the inline script or equivalent parse check).
+- Separate ink-layer implementation and print logic: PASS in source design.
+- Local HTTP smoke test: PASS (`200 OK`).
+- Browser runtime, visual appearance, and observed motion remain **NOT_TESTED** and cannot be treated as visual PASS.
+
+### Known limitations
+
+This is one print-style fixture proving the workflow, not a universal generator. It demonstrates a single lighthouse-and-boat Risograph treatment; it does not prove that all arbitrary user scenes will match the effect or that browser runtime quality is fully accepted. Manual browser acceptance remains the final gate.
+
+### Manual acceptance ledger
+
+- Phase 2E-6 Low-Poly 3D: **USER-OBSERVED MANUAL PASS**.
+- Phase 2E-5R Retro Anime: **DEFERRED / USER-OBSERVED VISUAL FAIL**.
+- Phase 2E-7 Risograph: **USER-OBSERVED VISUAL PARTIAL / NOT_YET_ACCEPTED** until manual browser observation verifies the corrected composition.
+- Total implemented styles after completion: **10/10**.
+- Manual acceptance totals: **8 PASS, 1 DEFERRED, 1 PARTIAL**.
+
+## 32. Phase 2F-1 Risograph polishing and spatial recovery (2026-11-10)
+
+### Root cause recap
+
+The previous Risograph lighthouse scene suffered from a weak spatial story: the boat appeared to travel over land because the ocean region, shoreline, and cliff silhouette were not separated with enough clarity. Large gray and pink print masses crowded the frame and obscured the lighthouse, while the beacon looked more like a large translucent overlay than a constrained sweep from the lantern. The result kept the animation working but undermined the subject hierarchy and print treatment.
+
+### Visual changes implemented
+
+The repaired phase keeps the working runtime and print architecture, but it rebalances the composition around a cleaner coast: the ocean is now a clear lower region, the shoreline sits in a distinct horizon band, the cliff is a stronger coastal mass, the lighthouse is larger and more legible, and the boat remains fully inside the visible water region. The overprint regions are reduced and localized so they support the scene without eclipsing the principal subjects.
+
+### Sea, coast, and boat corrections
+
+The sailboat route remains inside the ocean band throughout the loop, the hull reads as afloat, and the heading remains coherent along the travel path. The waterline and cliff edge are aligned so the boat does not appear to extend over land, and the scene ordering keeps the sea, cliff, and foreground in a stable hierarchy. The existing animated travel sequence and its timing remain preserved.
+
+### Lighthouse and beam repairs
+
+The lighthouse tower is now more recognizable as a tapered, structured form with a roof cap and lantern housing; the beam originates from the lamp and sweeps around a fixed pivot with a controlled angular width and moderate length. It remains legible against the sea without dominating the frame, and it interacts with the water in a restrained print-compatible treatment rather than spilling across the entire composition.
+
+### Ink-layer and print treatment
+
+The fixture retains separate logical ink layers, paper texture, halftone/stipple, and deterministic registration offsets. The overprint treatment is now more selective and readable, so the layered print quality remains visible without replacing the silhouette boundaries or flattening the scene. The paper grain remains static while the boat and beacon animation move above it.
+
+### Static validation evidence
+
+- `python3 .github/skills/scene-production/scripts/validate_scene.py --renderer canvas2d tests/fixtures/vidriso-lighthouse-signal/index.html`: PASS.
+- JavaScript syntax check: PASS.
+- Local HTTP smoke test: PASS (`200 OK`).
+- Browser runtime and user-observed visual acceptance: **NOT_TESTED**; source checks cannot prove the final visual composition or motion quality.
+
+### Remaining manual acceptance checks
+
+The user must still visually inspect the scene at start, midpoint, beam-over-water, and end states to confirm that the lighthouse, boat, coastline, and ocean read clearly together and that the corrected spatial composition is acceptable. Until that manual observation occurs, Risograph remains in a partial/accepted-structure-only state.
+
+## 33. Phase 2F-1R Risograph composition and layer recovery (2026-11-10)
+
+### Audit of actual draw order
+
+Before the fix, the geometry sequence was `drawPaper()`, `drawSky()`, `drawShoreline()`, `drawOcean()`, `drawCliff()`, `drawLighthouse()`, `drawBeacon()`, `drawBoundedInkAccents()`, and `drawBoat()`. The actual source-level cause of the visual failure was the broad `drawBoundedInkAccents()` polygon and the oversized `drawCliff()` mass: both were placed over the intended water zone and functioned as opaque coverage rather than light print accents. This masked the ocean and made the boat appear to sail over land. The lighthouse was also too thin, so the beam and tower did not establish a convincing primary subject.
+
+### Scene-zone definition and draw order repair
+
+The fixed version explicitly defines distinct scene regions for sky, distant land, ocean, cliff, lighthouse, and boat. The draw order now follows a coherent visual stack: paper base, sky, distant shoreline, ocean, cliff, lighthouse, beacon, restrained ink accents, and boat. The ocean remains a large visible region, the cliff stays in its own bounded area, and extra print overlays are no longer used as broad replacements for a real coastline.
+
+### Source-level spatial proof
+
+The code now keeps a `sceneZones` object and a `spatialAudit()` function to verify the intended geography: ocean exists as a meaningful lower region, cliff is confined to its allowed bounds, the boat route remains inside the ocean, the lighthouse base sits on the cliff, the beacon origin matches the lantern, and no broad opaque layer is used to cover the ocean. These are source-level checks only and do not certify browser appearance or final visual acceptance.
+
+### Print identity and beacon repair
+
+The lighthouse gains a more substantial tapered tower and clearer lantern details, while the beam remains tied to the lighthouse origin and uses a generated gradient rather than a screen-filling polygon. The print-treatment passes remain separate and restricted, preserving halftone, paper grain, overprint, and deterministic registration offsets without turning the entire composition into a large opaque fill.
+
+### Remaining acceptance gate
+
+The final approval step remains manual browser observation at initial, midpoint, beacon-over-water, and end states. Until the user confirms the corrected composition, the fixture remains source-corrected but not visually accepted.
+
+## 34. Phase 2F-1R2 Risograph sea / land coordinate correction (2026-11-10)
+
+### Actual render cause and repair
+
+The repeated visual failures were caused by the lower scene not having a real sea-first draw order. The cliff polygon and the large print accents were covering too much of the lower canvas and masking what should have been a dominant ocean region. As a result, the boat appeared to travel over land even though its route was meant to be over water. The lighthouse was also too small for the left-side coast and did not establish a clear subject hierarchy.
+
+### Screen-space zone correction
+
+The fixture now locks a coherent 2D composition using explicit screen-space bands: sky at the upper area, a narrow distant-land band near the horizon, a large ocean occupying most of the lower-right region, a bounded cliff on the left, a lighthouse mounted on the cliff, and a sailboat moving along a route entirely within the water area. This intentionally prevents any broad opaque brown land polygon from dominating the lower canvas.
+
+### Draw order and paint discipline
+
+The corrected sequence keeps the paper base, sky, distant shoreline, ocean fill and wave texture, cliff mass, lighthouse, beacon, boat, and small local print accents. The ocean remains the real visual foundation of the lower half, while the cliff is confined to the left margin. The final print accent shapes are deliberately narrow and bounded so they support the Risograph texture without acting like land fills or full-coverage overlays.
+
+### Source-level region proof
+
+A `spatialAudit()` function still acts as a source-level sanity check, but it is now aligned with the actual intended geography instead of making assumptions about a sea that was masked by land. It verifies that the ocean extends across the main lower region, the cliff is bounded, the lighthouse base stays on the cliff, the beacon origin stays at the lantern, and the boat remains in the ocean route. This is only a geometry sanity check; it does not prove final browser appearance.
+
+### Acceptance gate
+
+The final proof remains human observation in the browser. Until the user confirms the coastline, beam, and boat route read correctly in context, the Risograph scene remains a source-corrected but not visually accepted fix.
+
+## 35. Phase 2F-1R3 Risograph coastal cliff geometry repair (2026-11-10)
+
+### Coastal structure repair
+
+The remaining visual defect was not the water or boat anymore; it was the land mass itself. The cliff had become too rectangular and too monolithic, so it read like a flattened wall rather than a headland. The lighthouse base also looked detached because the terrain did not establish a believable top surface under it. This was repaired by rebuilding the cliff as a more irregular headland with a defined top plane, a rocky side face, and a few small tonal facets that still respect the Risograph print language.
+
+### Stray print shape repair
+
+A stray translucent accent near the sailboat was reduced to a bounded, clipped, low-opacity ink nuance. It now behaves as a subtle overprint or water shadow instead of a floating polygon that suggested a misplaced rock. The fix keeps the layering and Risograph texture intact while removing the misleading geography cue.
+
+### Acceptance gate
+
+The corrected cliff and the reduced accent remain source-bounded and structurally consistent, but final approval still depends on browser observation by the user. Source checks confirm geometry and delivery; they do not replace visual acceptance.
+
+## 36. Phase 2F-2A Retro Anime static layout preview (2026-11-10)
+
+### Purpose and scope
+
+This phase intentionally does not animate the Retro Anime station scene. Instead, it creates a dedicated static layout preview that can be visually assessed before motion and character refinement begin. The original animation fixture remains untouched, and the preview is a separate artifact for composition and perspective review.
+
+### Camera and perspective choices
+
+The static preview defines a coherent cinematic station-platform view with a clear horizon, a sloping platform, visible rails receding toward the same vanishing direction, and a station building placed in the background to provide depth. The traveler and train remain primary subjects, while the bench and luggage stay secondary. The composition uses a three-quarter viewpoint rather than a flat front-facing presentation so the platform and train register as actual spatial forms.
+
+### Design intent and visual treatment
+
+The frame prioritizes classic cel-animation readability: bold silhouettes, inked outlines, flat base colors, controlled shadow shapes, readable human features, warmer atmospheric coloring, and a clear hierarchy of subject over background. The train is constructed as a perspective body with front and side faces, and the traveler is grounded on the platform with a clear suitcase hold and believable anatomy for a static pose.
+
+### Static validation and limitations
+
+The source-level Canvas checks passed for initialization and drawing, and the file served successfully at HTTP 200. The validator for `canvas2d` still identifies the absence of an animation loop as a structural failure because it is designed for motion scenes, which is a limitation for static preview work. That limitation does not prove visual failure; it simply means this phase intentionally avoids motion to satisfy the user's static-layout requirement.
+
+### Acceptance gate
+
+Manual browser inspection is still the required final step. The preview is ready for user review, but it remains unaccepted until the user observes it and confirms the static composition, perspective, and subject readability.
