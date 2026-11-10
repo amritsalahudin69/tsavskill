@@ -22,6 +22,7 @@ Production mode determines output type. Operation capabilities determine the wor
 
 ## Installed skills and scene inputs
 
+<<<<<<< Updated upstream
 Visual styles describe presentation techniques, not required characters, stories, actions, or environments. Scene content is always user-defined; never substitute an illustrative example for missing scene input. The initial design permits at most one primary style.
 
 ### Installed style child: Miniature Diorama
@@ -63,6 +64,22 @@ For “Create a standalone Miniature Diorama HTML/Three.js animation of a small 
 - Load `.github/skills/scene-production/SKILL.md` for the HTML/Three.js workflow and `.github/skills/vidmindi/SKILL.md` for style guidance.
 - Preserve the delivery truck, wooden bridge, mountain village, and crossing action. Do not replace them with Lunar Outpost or railway-fixture content; do not invent duration, aspect ratio, or looping constraints as universal defaults.
 - Produce an HTML artifact only when implementation is requested and available; follow the production skill's run instructions and six validation gates. Report browser, visual, or motion checks as untested unless observed.
+=======
+Visual style describes presentation techniques, not required characters, stories, actions, or environments. Scene content is always user-defined; never substitute an illustrative example for missing scene input. The initial design permits at most one primary style.
+
+### Installed visual-style child
+
+- **Miniature Diorama**
+  - Stable skill ID: `style.miniature-diorama`
+  - User-facing prompt alias: `/vidmindi`
+  - Copilot skill location: `.github/skills/vidmindi/SKILL.md`
+  - Status: implemented and tested as a discoverable Copilot project skill.
+  - Scope: visual-style guidance for user-defined scenes only; it does not provide video generation, HTML generation, or a renderer.
+
+When Miniature Diorama is requested, select the `vidmindi` child and direct the host to load its instructions using the prompt-based phrase `Use the /vidmindi skill`. Use the child's instructions for style guidance. If the host cannot load them, report that limitation rather than presenting the child marker or its detailed guidance as loaded. `/vidmindi` is not a registered native slash command.
+
+Retro PS2 and other visual-style children remain unimplemented. Do not present them as installed capabilities.
+>>>>>>> Stashed changes
 
 ## Character source authority
 
@@ -71,14 +88,23 @@ When integrating canonical character HTML, inspect and preserve its identity, ge
 ## Intended hybrid routing
 
 - With no arguments, explain available capabilities and their implementation status.
+<<<<<<< Updated upstream
 - With an explicit recognized skill, select that capability.
 - With a sufficiently clear task, select a compatible production mode and operation; compose a visual style only when requested or unambiguous.
+=======
+- With an explicit recognized skill, select that capability. For Miniature Diorama, select the installed `vidmindi` child and use its instructions as described above.
+- With a sufficiently clear task, select a compatible production mode and operation.
+>>>>>>> Stashed changes
 - With material ambiguity, ask for clarification.
 - Never silently override explicit requirements or character/source authority.
 
 ## Implementation status and fallback
 
+<<<<<<< Updated upstream
 Copilot CLI 1.0.108 listed `vskills`, `vidmindi`, and `scene-production` as project skills. This verifies project-skill discovery in that CLI version only; listing or selecting instructions does not prove automatic parent routing, scene execution, browser/WebGL runtime, visual fidelity, or motion. `scene-production` is an instruction capability, not a generator; video export and other visual-style children remain unimplemented. `/vidmindi` is not a registered native slash command, and no native `/scene-production` command is established.
+=======
+The `vidmindi` visual-style child is implemented and tested as discoverable; its stable ID is `style.miniature-diorama`. Other visual-style child skills, native slash-command registration, automated routing, and video/character production execution are not implemented. Do not claim a capability ran merely because its instructions were read; report limitations and checks honestly.
+>>>>>>> Stashed changes
 
 If the host does not automatically load a project skill, use these instructions manually: identify the user's requested outcome, scene and source inputs, mode, operation, and optional style; load the selected skill files; follow applicable source-authority constraints; and report unsupported execution or unrun validation honestly. Do not claim execution merely because a skill was discovered or its instructions were read.
 
