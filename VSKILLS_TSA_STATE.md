@@ -3,8 +3,8 @@
 **Status:** RECOVERED / RECONSTRUCTED, not an exact copy of the missing home-machine file  
 **Recovery date:** 2026-11-10  
 **Evidence:** `tsavskill.tar` snapshot supplied by the user; previously supplied TSA phase and agent-test reports.  
-**Active phase:** Phase 2F-1R3 — Risograph Coastal Cliff Geometry Repair (completed; browser visual acceptance pending)
-**Next authorization:** Wait for explicit user authorization before further implementation.
+**Active phase:** Phase 2G-2 — Low-Poly 3D Production Polish (static implementation complete; visual acceptance pending)
+**Next authorization:** Wait for user visual acceptance before further implementation.
 
 ## 1. Goal and invariant baseline
 
@@ -53,6 +53,10 @@ TSA VSkills is a portable, incremental skill framework with parent `vskills`, vi
 | Phase 2E-3 — Claymation visual skill and fixture | Added `vidclay` and a volumetric garden-delivery animation with articulated character and attached flowerpot | **COMPLETED** for metadata, renderer structural checks, JavaScript syntax, static scene/hierarchy/state/continuity checks, and HTTP 200; browser runtime, appearance, and motion not tested |
 | Phase 2E-4 — Paper Cutout visual skill and fixture | Added `vidpaper` and a layered Canvas 2D forest-crossing animation with an articulated paper fox | **COMPLETED** for metadata, Canvas structural checks, JavaScript syntax, static layer/path/articulation checks, and HTTP 200; browser runtime, visual appearance, and motion not tested |
 | Phase 2E-5 — Retro Anime visual skill and fixture | Added `vidanime` and a perspective-aligned Canvas 2D station-arrival animation | **COMPLETED** for metadata, Canvas structural checks, JavaScript syntax, static scene/face/prop/timing/track/layer checks, and HTTP 200; browser runtime, visual appearance, and motion not tested |
+| Phase 2F-2A-R — Retro Anime asset-first production recovery | Defined artwork-first gates; inventory found no approved station keyframe or asset pack and no image-authoring capability in this environment | **BLOCKED: ARTWORK_REQUIRED**; existing primitive Canvas fixtures are explicitly not approved artwork; no fixture or skill was changed |
+| Phase 2F-2B — Approved artwork asset production contract | Inspected the user-approved 1536×1024 master and recorded its visual analysis, registered asset plan, and untimed animation specification | **BLOCKED: ASSET_AUTHORING_REQUIRED**; source is readable but segmentation, inpainting, and consistent-pose authoring are unavailable |
+| Phase 2F-2 — Retro Anime 2D retirement and catalog closeout | Archived `vidanime` outside Copilot discovery, removed it from the active parent catalog, and retained fixtures/contracts/history | **COMPLETED**; active catalog has nine user-reported USER-OBSERVED MANUAL PASS styles; Anime-Styled 3D remains an unimplemented candidate |
+| Phase 2G-2 — Low-Poly 3D production polish | Corrected the cable-car fixture's cable contacts, cabin/station docking, support geometry, station readability, shadows, framing, and elapsed-time origin | **COMPLETED for static implementation, validator, syntax, source-level geometry checks, and HTTP 200**; browser runtime, visual appearance, and motion await user observation |
 
 ## 3. Current filesystem snapshot (office tar)
 
@@ -653,3 +657,44 @@ The cliff geometry and stray polygon have been repaired within scope, static che
 ### Phase 2F-2A stop condition
 
 The static Retro Anime preview is created, the available source checks are complete, and both TSA ledgers reflect the current state. The preview is ready for manual browser inspection; no animation work or original fixture edits are included.
+
+## 44. Phase 2F-2 Retro Anime 2D retirement and catalog closeout (2026-11-11)
+
+- Retired `style.retro-anime` / `vidanime` from the active style catalog as **RETIRED / NOT ACCEPTED** following the documented user-observed visual failure and blocked asset-authoring path.
+- Moved the original skill instructions unchanged from `.github/skills/vidanime/SKILL.md` to `archive/skills/vidanime/SKILL.md`, outside Copilot project-skill discovery. All Retro Anime HTML fixtures, `approved-master.png`, `asset-manifest.json`, and `animation-timeline.json` remain preserved.
+- Reconciled the parent catalog to list only nine active styles: Miniature Diorama, Retro PS2, Pixel Art, Comic Book, Toy Brick, Claymation, Paper Cutout, Low-Poly 3D, and Risograph. Per the user's closeout decision, all nine active styles are recorded as **USER-OBSERVED MANUAL PASS**; this replaces prior aggregate acceptance totals for current status while keeping historical records intact.
+- Anime-Styled 3D is a separate future research candidate only. It is not implemented, accepted, or a replacement for the retired 2D style.
+- The parent skill contained unresolved merge-conflict markers before this task. With user authorization, compatible parent guidance was reconciled into a clean file and the active catalog/retirement status was aligned.
+- Validation: the nine active child skill files' SHA-256 values were captured before the change and remain the verification baseline; the archived `vidanime` source hash is `e317cf5b868455f6b21ae4cfacc0bffd0df6d7516d4e08a3d08ca7e5ba489720`. Parent marker/catalog checks and `copilot skill list` were performed after retirement. No fixtures, asset contracts, validators, or other style skill files were edited.
+
+### Phase 2F-2 stop condition
+
+The 2D Retro Anime child is archived, removed from active discovery/catalog routing, and its failure and blocked asset history are retained. Stop here; Anime-Styled 3D remains unimplemented.
+
+## 43. Phase 2F-2A-R Retro Anime asset-first production recovery (2026-11-11)
+
+- The user reports the prior geometry-only Retro Anime result as a visual failure: the character read as a stick figure, the train as a box, and the station perspective/layering was not convincing. Do not repeat primitive Canvas construction for detailed anime artwork.
+- **Artwork availability:** no approved Retro Anime station keyframe or reusable asset pack was found. `tests/fixtures/vidanime-asset-scene/assets/` does not exist. The existing animated fixture and static layout preview are procedural Canvas drawings and are not approved key art. The image files found in the fixture tree are unrelated Lunar Outpost screenshots.
+- **Capability availability:** this environment exposes no image-generation or visual-authoring tool. Therefore the required artwork cannot be authored or shown for user acceptance here. Status is **ARTWORK_REQUIRED**; do not make a blank placeholder, geometry mockup, or unsupported claim of completed art.
+- **Asset-first plan:** (A) establish one coherent station composition, create or obtain a high-quality Retro Anime keyframe, show it to the user, and proceed only after acceptance; derive and prepare reusable layers from that accepted artwork. Required asset targets: `station_background.png`, `platform_foreground.png`, `traveler_idle.png`, `traveler_walk_01.png` through `traveler_walk_04.png`, `suitcase.png`, and `train.png` under `tests/fixtures/vidanime-asset-scene/assets/`; moving foreground components require transparency and consistent identity, perspective, palette, and lighting. (B) after acceptance, create a static Canvas compositor only and validate asset alignment, scale, perspective, and occlusion. (C) after static asset-scene PASS, add walk/sprite switching, hand-attached suitcase, head-turn change, train approach, and foreground occlusion.
+- **Gate decision:** Phase A cannot pass until approved artwork is supplied or produced with an available authorized visual-authoring capability, then accepted by the user. Phases B and C are not started. Existing `vidanime/SKILL.md`, animated fixture, static preview, other styles, and TSA structure remain unchanged; only the state and knowledge ledgers record this blocker.
+
+### Phase 2F-2A-R stop condition
+
+Stop with **ARTWORK_REQUIRED**. Resume only when the approved keyframe is available and the user has accepted it; do not fall back to primitive Canvas drawing.
+
+## 45. Phase 2G-2 Low-Poly 3D production polish
+
+- Preserved the existing mountain cable-car scene and 10-second trip while correcting the cable/carrier/support transforms.
+- Support towers now derive their contact point and orientation from the shared cable curve. World-space contact positions are converted to tower-local coordinates; portal legs, crossbars, and saddles reach the cable without occupying the cabin's travel corridor.
+- The cabin root now follows the cable centerline directly. A vertical hanger, paired rollers, gabled roof, framed windows, and doors replace the detached hanger, incorrect quarter-turn, and inverted cone roof. Yaw follows the path tangent.
+- Station facades now face the terminal route; the cabin stops outside each entrance, its rear door aligns to the station door, and its floor height matches the platform. The upper station sits on a broad raised terrain shelf; platforms and tower feet have terrain-following supports.
+- Removed the fixed dark circle shadow in favor of the existing directional shadow map and adjusted the camera to show more of the valley and route.
+- Animation elapsed time now starts from the first requestAnimationFrame timestamp; the existing 10-second duration and final stop are preserved.
+- Validation: the requested Three.js structural validator, JavaScript module syntax check, source-level dock/contact assertions, approximate route/terrain clearance analysis, and local HTTP request passed (`200`). The estimated minimum cabin-to-terrain clearance was about 1.1 world units; this static approximation does not prove rendered clearance or motion.
+- Browser runtime, visual quality, and motion are **NOT_TESTED**. No local browser executable was available, and no visual PASS is claimed. The Phase 2E-6 user-observed baseline remains historical; this polish awaits user visual acceptance.
+- No files outside the fixture and TSA state/knowledge ledgers were changed for this phase. Existing unrelated worktree changes were left untouched; no staging, commit, or push occurred.
+
+### Phase 2G-2 stop condition
+
+Static implementation and available checks are complete. Stop and await user-observed browser acceptance before further scene changes.

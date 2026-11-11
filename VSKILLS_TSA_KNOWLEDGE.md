@@ -693,3 +693,83 @@ The source-level Canvas checks passed for initialization and drawing, and the fi
 ### Acceptance gate
 
 Manual browser inspection is still the required final step. The preview is ready for user review, but it remains unaccepted until the user observes it and confirms the static composition, perspective, and subject readability.
+
+## 38. Phase 2F-2 Retro Anime 2D retirement and catalog closeout (2026-11-11)
+
+### Retirement decision
+
+- Retro Anime 2D (`style.retro-anime`, `vidanime`) is **RETIRED / NOT ACCEPTED** after the user-observed visual failure and asset-authoring block. It is excluded from active style selection and Copilot project-skill discovery.
+- The original child instructions were moved unchanged to `archive/skills/vidanime/SKILL.md`. Its HTML fixtures, approved master artwork, asset manifest, animation timeline, and prior failure/blocked-workflow records remain as historical material.
+- The parent skill's unresolved conflict markers were found in the active catalog during closeout. The user authorized resolving them; the resulting parent lists only the nine active styles and preserves compatible routing/production guidance.
+
+### Current active catalog and acceptance status
+
+Per the user's closeout decision, the active styles and current acceptance status are:
+
+| Style | Stable ID | Child | Current manual status |
+| --- | --- | --- | --- |
+| Miniature Diorama | `style.miniature-diorama` | `vidmindi` | USER-OBSERVED MANUAL PASS |
+| Retro PS2 | `style.retro-ps2` | `vidps2` | USER-OBSERVED MANUAL PASS |
+| Pixel Art | `style.pixel-art` | `vidpixel` | USER-OBSERVED MANUAL PASS |
+| Comic Book | `style.comic-book` | `vidcomic` | USER-OBSERVED MANUAL PASS |
+| Toy Brick | `style.toy-brick` | `vidbrick` | USER-OBSERVED MANUAL PASS |
+| Claymation | `style.claymation` | `vidclay` | USER-OBSERVED MANUAL PASS |
+| Paper Cutout | `style.paper-cutout` | `vidpaper` | USER-OBSERVED MANUAL PASS |
+| Low-Poly 3D | `style.low-poly-3d` | `vidlowpoly` | USER-OBSERVED MANUAL PASS |
+| Risograph | `style.risograph` | `vidriso` | USER-OBSERVED MANUAL PASS |
+
+This is the current closeout decision supplied by the user; earlier phase-specific records remain unchanged as historical evidence and may show narrower or pending checks.
+
+### Future candidate
+
+Anime-Styled 3D is a separate research candidate only. No Three.js anime skill, fixture, or implementation was created, and it is not an accepted replacement for the retired 2D style.
+
+### Validation and evidence
+
+- Parent catalog contains nine active children and explicitly excludes `vidanime` from active routing.
+- The source skill was archived byte-for-byte; pre-move SHA-256: `e317cf5b868455f6b21ae4cfacc0bffd0df6d7516d4e08a3d08ca7e5ba489720`.
+- Copilot CLI project-skill listing after the move is the discovery check; the nine other style skill files were checksum-checked against pre-change baselines.
+- No historical Retro Anime fixture or asset-contract file was deleted or edited. No new anime implementation was started.
+
+## 37. Phase 2F-2A-R Retro Anime asset-first production recovery (2026-11-11)
+
+### Reported failure and decision
+
+- The user identifies the geometry-only Retro Anime treatment as a **USER-OBSERVED VISUAL FAIL**: the traveler read as a stick figure, the train as a box, station perspective was broken, and rail/station geometry overlapped. Do not repeat primitive Canvas construction for detailed illustrated subjects.
+- Use an asset-first pipeline for complex illustrated subjects. Canvas may composite approved artwork, position/scale it, manage occlusion and elapsed-time motion, and switch prepared sprite frames; it must not reconstruct detailed anime characters or perspective trains from basic shapes.
+
+### Artwork inventory and gate
+
+- No approved Retro Anime station keyframe or matching reusable asset pack is available in this workspace. The planned `tests/fixtures/vidanime-asset-scene/assets/` directory is absent.
+- The existing `vidanime-station-arrival` animation and `vidanime-static-layout` preview are procedural Canvas drawings, not approved key artwork. The fixture-tree raster files are unrelated Lunar Outpost screenshots and cannot serve as Retro Anime assets.
+- No image-generation or visual-authoring capability is available in this agent environment. Thus a keyframe cannot be created or presented for user visual acceptance in this phase. Do not fabricate placeholders or classify primitive sketches as completed artwork.
+- Phase status: **ARTWORK_REQUIRED / BLOCKED**. No asset scene or animation recovery was implemented.
+
+### Staged asset-first workflow
+
+1. **Phase A — artwork first:** establish the station composition; obtain or create one high-quality, non-franchise-specific Retro Anime keyframe; present it for explicit user acceptance; then derive reusable layers. Target assets under `tests/fixtures/vidanime-asset-scene/assets/`: `station_background.png`, `platform_foreground.png`, `traveler_idle.png`, `traveler_walk_01.png`, `traveler_walk_02.png`, `traveler_walk_03.png`, `traveler_walk_04.png`, `suitcase.png`, and `train.png`. Moving foreground assets use transparency and share perspective, palette, lighting, and character identity.
+2. **Phase B — static compositor after acceptance:** load and render only the approved assets; validate perspective, alignment, scale, transparency, compositing, and occlusion. No animation at this gate.
+3. **Phase C — motion after static PASS:** add traveler walking, hand-attached suitcase, head-turn frame change, train approach along the approved track perspective, and correct foreground occlusion.
+
+Do not edit `vidanime/SKILL.md` until the asset-based method demonstrates visual improvement. Existing animated and static fixtures remain unchanged. The only updates for this blocked phase are these TSA ledgers; no visual acceptance is claimed.
+
+## 39. Phase 2G-2 Low-Poly 3D production polish
+
+### Root causes and corrections
+
+- The tower contact marker was appended to a parented group using world coordinates as if they were local. Towers also used unrelated fixed heights, so supports did not terminate at the shared cable.
+- The cabin root was offset above the path by `2.6`, its hanger was horizontal, and its yaw added an unnecessary quarter-turn. Its inverted cone roof obscured cabin orientation. The cabin root now sits on the cable point, its vertical hanger and bogie meet that point, and its gabled cabin follows the path tangent.
+- Station yaw did not match the terminal route, and the upper station sat in low terrain. Station orientation and route anchors now share a terminal direction; the cabin dock is offset by the station door plus half its length, aligning its rear door with the entrance while keeping the body outside the station. Cabin floor and station platform heights are matched. The raised upper terrain shelf and platform piers support the terminal area.
+- A fixed-height dark circle shadow caused an unexplained artifact. It was removed in favor of terrain-received directional shadows. The camera was reframed to show more of the valley.
+- The render loop treated the browser's page-relative RAF timestamp as elapsed animation time. Elapsed time is now measured from an explicit first-frame timestamp; the 10-second trip and final stop remain unchanged.
+
+### Validation and evidence
+
+- `python3 .github/skills/scene-production/scripts/validate_scene.py --renderer threejs tests/fixtures/vidlowpoly-mountain-cablecar/index.html`: **PASS** for renderer structure, camera, render call, and animation loop.
+- JavaScript module syntax: **PASS** with `node --check`.
+- Source-level checks: **PASS** for world-to-local tower contact, shared cable tangent usage, direct cabin-on-path placement, station door/dock alignment, floor/platform alignment, elapsed-time origin, and removal of the fixed shadow.
+- Route geometry was additionally approximated from the control points to check terrain clearance and tower placement. The estimated minimum cabin-to-terrain clearance was about 1.1 world units; this approximation is not a browser-rendered or exact Three.js runtime measurement.
+- Local HTTP smoke test returned **200**.
+- Browser runtime, camera visibility, visual appearance, and observed movement remain **NOT_TESTED** because no local browser executable was available. The previously accepted Low-Poly fixture is the baseline; this polish has not received user visual acceptance.
+
+The fixture remains a single Low-Poly 3D example, not a general scene generator. Stop at this phase and await manual browser acceptance.
