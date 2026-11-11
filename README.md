@@ -6,7 +6,7 @@
 
 **One production workflow · Nine optional visual styles · User-defined stories and characters**
 
-[Getting started](#-quick-start--install-di-github-copilot-cli) · [Skill catalog](#-skill-yang-tersedia) · [CLI examples](#-contoh-penggunaan-di-copilot-cli) · [Combine skills](#-kombinasi-skill) · [Troubleshooting](#-troubleshooting)
+[Getting started](#-quick-start--install-di-github-AI Agent-cli) · [Skill catalog](#-skill-yang-tersedia) · [CLI examples](#-contoh-penggunaan-di-AI Agent-cli) · [Combine skills](#-kombinasi-skill) · [Troubleshooting](#-troubleshooting)
 
 </div>
 
@@ -32,14 +32,14 @@
 - **SSH clone:** `git@github.com:amritsalahudin69/tsavskill.git`
 - **GitHub CLI:** `gh repo clone amritsalahudin69/tsavskill`
 
-## 🚀 Quick start — install di GitHub Copilot CLI
+## 🚀 Quick start — install di GitHub AI Agent CLI
 
-**Persyaratan:** GitHub Copilot CLI yang sudah terpasang dan login, Git, serta folder proyek tempat kamu ingin menggunakan skills. Untuk menjalankan preview dibutuhkan browser; Python 3 digunakan untuk validator yang disertakan.
+**Persyaratan:** GitHub AI Agent CLI yang sudah terpasang dan login, Git, serta folder proyek tempat kamu ingin menggunakan skills. Untuk menjalankan preview dibutuhkan browser; Python 3 digunakan untuk validator yang disertakan.
 
 ### Opsi A — install menggunakan prompt agent + link GitHub
 
-1. Buka terminal di **root proyek tujuan**, lalu jalankan `copilot` untuk masuk ke GitHub Copilot CLI.
-2. Tempel instruksi berikut **sebagai pesan biasa di sesi Copilot CLI** (bukan perintah shell):
+1. Buka terminal di **root proyek tujuan**, lalu jalankan `AI Agent` untuk masuk ke GitHub AI Agent CLI.
+2. Tempel instruksi berikut **sebagai pesan biasa di sesi AI Agent CLI** (bukan perintah shell):
 
 ```text
 Install TSA VSkills from this GitHub repository:
@@ -53,7 +53,7 @@ If a target skill already exists, show the conflict before overwriting.
 Do not install the project's test fixtures as skills.
 
 After copying, reload skills with /skills reload if supported, then verify
-with /skills list (or copilot skill list from the terminal). Check all 11
+with /skills list (or AI Agent skill list from the terminal). Check all 11
 names: vskills, scene-production, vidmindi, vidps2, vidpixel, vidcomic,
 vidbrick, vidclay, vidpaper, vidlowpoly, vidriso.
 
@@ -101,7 +101,7 @@ Jika ingin memasang skill ke proyek lain, salin folder `.github/skills/` dari ha
 
 ### Verifikasi setelah install
 
-**Di dalam Copilot CLI:** 
+**Di dalam AI Agent CLI:** 
 
 ```text
 /skills reload
@@ -114,12 +114,12 @@ Jika ingin memasang skill ke proyek lain, salin folder `.github/skills/` dari ha
 **Di terminal biasa, di root proyek yang sama:**
 
 ```bash
-copilot skill list
+AI Agent skill list
 ```
 
 Harus terdeteksi **11 skill project**: `vskills`, `scene-production`, dan sembilan gaya di bawah ini. Jika kurang, cek folder kerja, path `.github/skills/<name>/SKILL.md`, dan apakah file referensi di `scene-production/` ikut tersalin.
 
-> `/skills` membuka pengelolaan skill di Copilot CLI; `/skills list` menampilkan daftar. Perintah dan pengalaman UI bisa berbeda menurut versi CLI. Tidak ada kebutuhan untuk mendaftarkan alias shell `/vidlowpoly` secara terpisah.
+> `/skills` membuka pengelolaan skill di AI Agent CLI; `/skills list` menampilkan daftar. Perintah dan pengalaman UI bisa berbeda menurut versi CLI. Tidak ada kebutuhan untuk mendaftarkan alias shell `/vidlowpoly` secara terpisah.
 
 ## 🧩 Skill yang tersedia
 
@@ -146,9 +146,9 @@ Harus terdeteksi **11 skill project**: `vskills`, `scene-production`, dan sembil
 
 **Retro Anime 2D tidak tersedia:** implementasi eksperimennya sudah dipensiunkan dan bukan bagian katalog aktif.
 
-## 💬 Contoh penggunaan di Copilot CLI
+## 💬 Contoh penggunaan di AI Agent CLI
 
-Setelah skill terdeteksi, ketik **prompt berikut di sesi Copilot CLI**. Bentuk `Use the /skill-name skill ...` merujuk skill bernama itu; ini **bukan** perintah shell dan tidak menjamin setiap versi host menyediakan slash command mandiri untuk tiap skill.
+Setelah skill terdeteksi, ketik **prompt berikut di sesi AI Agent CLI**. Bentuk `Use the /skill-name skill ...` merujuk skill bernama itu; ini **bukan** perintah shell dan tidak menjamin setiap versi host menyediakan slash command mandiri untuk tiap skill.
 
 ### 1. Gunakan skill utama tanpa menentukan gaya
 
@@ -330,10 +330,10 @@ Fixture bukan input wajib. Saat memasang skills ke proyek lain, cukup salin `.gi
 | Output hanya deskripsi, bukan HTML | Minta agent membuat file HTML nyata dan melaporkan path yang terverifikasi; jangan terima klaim file dibuat tanpa bukti. |
 | Instalasi menimpa skill lain | Review konflik; jangan menjalankan overwrite otomatis terhadap proyek pengguna. |
 
-## 📚 Referensi resmi GitHub Copilot CLI
+## 📚 Referensi resmi GitHub AI Agent CLI
 
-- [Adding agent skills for GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
-- [GitHub Copilot CLI commands (`/skills`)](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)
+- [Adding agent skills for GitHub AI Agent CLI](https://docs.github.com/en/AI Agent/how-tos/AI Agent-cli/customize-AI Agent/add-skills)
+- [GitHub AI Agent CLI commands (`/skills`)](https://docs.github.com/en/AI Agent/reference/AI Agent-cli-reference/cli-command-reference)
 - [GitHub CLI `gh skill install` (preview)](https://cli.github.com/manual/gh_skill_install)
 
 ## 📌 Project status and release notes
