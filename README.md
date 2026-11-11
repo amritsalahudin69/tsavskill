@@ -25,19 +25,25 @@
 
 **Batas kemampuan rilis ini:** `scene-production` adalah child skill operasional yang sudah dikemas. `vskills` juga menjelaskan mode *standalone animation*, *modular film*, dan *character asset*, serta rute konseptual untuk character creation, video breakdown, integrasi canonical character, dan scene assembly. Itu **belum berarti** semua operasi tersebut tersedia sebagai child skill otomatis terpisah. Tidak ada klaim bahwa paket ini otomatis menghasilkan MP4 atau menjamin kualitas visual setiap scene.
 
+## 🔗 Official repository
+
+- **GitHub:** https://github.com/amritsalahudin69/tsavskill/
+- **HTTPS clone:** `https://github.com/amritsalahudin69/tsavskill.git`
+- **SSH clone:** `git@github.com:amritsalahudin69/tsavskill.git`
+- **GitHub CLI:** `gh repo clone amritsalahudin69/tsavskill`
+
 ## 🚀 Quick start — install di GitHub Copilot CLI
 
 **Persyaratan:** GitHub Copilot CLI yang sudah terpasang dan login, Git, serta folder proyek tempat kamu ingin menggunakan skills. Untuk menjalankan preview dibutuhkan browser; Python 3 digunakan untuk validator yang disertakan.
 
 ### Opsi A — install menggunakan prompt agent + link GitHub
 
-1. Buka terminal di **root proyek tujuan**, lalu jalankan `copilot`.
-2. **Ganti `OWNER/REPO` dengan URL GitHub TSA VSkills yang benar setelah repository dipublikasikan.** URL pada contoh ini adalah placeholder, bukan link rilis nyata.
-3. Tempel instruksi berikut **sebagai pesan biasa di sesi Copilot CLI** (bukan perintah shell):
+1. Buka terminal di **root proyek tujuan**, lalu jalankan `copilot` untuk masuk ke GitHub Copilot CLI.
+2. Tempel instruksi berikut **sebagai pesan biasa di sesi Copilot CLI** (bukan perintah shell):
 
 ```text
 Install TSA VSkills from this GitHub repository:
-https://github.com/OWNER/REPO
+https://github.com/amritsalahudin69/tsavskill
 
 Read the repository's README and inspect its .github/skills/ directories.
 Install the complete vskills, scene-production, and nine vid* skills into
@@ -63,8 +69,8 @@ installation PASS without verifying the local files and discovery result.
 Jalankan ini dari root **proyek tujuan** (Linux / macOS / WSL; contoh di bawah tidak menghapus skills lama):
 
 ```bash
-# Replace OWNER/REPO with the actual published GitHub repository.
-git clone --depth 1 https://github.com/OWNER/REPO.git /tmp/tsa-vskills-source
+# Clone the TSA VSkills repository using HTTPS.
+git clone --depth 1 https://github.com/amritsalahudin69/tsavskill.git /tmp/tsa-vskills-source
 
 # Review conflicts before copying; do not overwrite unrelated skills.
 mkdir -p .github/skills
@@ -76,7 +82,22 @@ find .github/skills -name SKILL.md -print
 
 `cp -nR` menghindari penggantian file yang sudah ada, tetapi pada direktori skill yang sudah ada kamu tetap perlu memeriksa apakah salinannya lengkap dan sesuai versi. Jika ada konflik, selesaikan secara eksplisit—jangan menganggap instalasi berhasil hanya dari hasil `cp`.
 
-**Alternatif:** Jika GitHub CLI `gh skill` tersedia dalam versi yang mendukung fitur preview, periksa `gh skill --help`, `gh skill preview OWNER/REPO <skill>`, dan `gh skill install --help`. Dukungan repositori dengan skill dalam direktori tersembunyi `.github/skills/` mungkin membutuhkan `--allow-hidden-dirs`. Alur manual di atas tetap dapat dipakai tanpa fitur preview ini.
+**Alternatif akses repository:** Pilih salah satu cara clone sesuai autentikasi yang tersedia (semua mengarah ke repository yang sama):
+
+```bash
+# HTTPS
+git clone https://github.com/amritsalahudin69/tsavskill.git
+
+# SSH (requires a configured GitHub SSH key)
+git clone git@github.com:amritsalahudin69/tsavskill.git
+
+# GitHub CLI (requires gh installed and authenticated)
+gh repo clone amritsalahudin69/tsavskill
+```
+
+Jika ingin memasang skill ke proyek lain, salin folder `.github/skills/` dari hasil clone ke `.github/skills/` di proyek tujuan; jangan mengganti file proyek yang sudah ada tanpa pemeriksaan.
+
+**Opsional:** Jika GitHub CLI `gh skill` tersedia dalam versi yang mendukung fitur preview, periksa `gh skill --help`, `gh skill preview amritsalahudin69/tsavskill <skill>`, dan `gh skill install --help`. Dukungan repositori dengan skill dalam direktori tersembunyi `.github/skills/` mungkin membutuhkan `--allow-hidden-dirs`. Alur manual di atas tetap dapat dipakai tanpa fitur preview ini.
 
 ### Verifikasi setelah install
 
