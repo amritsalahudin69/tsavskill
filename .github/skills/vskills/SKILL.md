@@ -44,7 +44,7 @@ Prompt aliases are invocation phrases, not verified native slash commands. Load 
 
 ### Retired visual style
 
-Retro Anime 2D (`style.retro-anime`, `vidanime`) is **RETIRED / NOT ACCEPTED** and is not part of the active catalog. Its original instructions are archived at `archive/skills/vidanime/SKILL.md`; historical fixtures and asset-contract files are retained unchanged. The prior 2D implementation remains a user-observed visual FAIL with a blocked asset-authoring workflow. Anime-Styled 3D is a future research candidate only, not an implemented or accepted replacement.
+Retro Anime 2D (`style.retro-anime`, `vidanime`) is **RETIRED / NOT ACCEPTED** and is not part of the active catalog. The retired 2D implementation is not shipped in this distribution. Its previous experiments failed visual acceptance and its asset-authoring workflow was blocked. Anime-Styled 3D is a future research candidate only, not an implemented or accepted replacement.
 
 ### Installed production capability: Scene Production
 

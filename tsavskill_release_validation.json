@@ -1,0 +1,134 @@
+{
+  "source_archive": "/mnt/data/tsavskill(4).tar",
+  "package_archive": "/mnt/data/tsavskill_release_clean.tar.gz",
+  "skills": [
+    "scene-production",
+    "vidbrick",
+    "vidclay",
+    "vidcomic",
+    "vidlowpoly",
+    "vidmindi",
+    "vidpaper",
+    "vidpixel",
+    "vidps2",
+    "vidriso",
+    "vskills"
+  ],
+  "fixture_validation": [
+    [
+      "tests/fixtures/cross-style-mountain-bridge/miniature-diorama/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/cross-style-mountain-bridge/retro-ps2/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidbrick-construction-yard/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidclay-garden-delivery/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidcomic-city-delivery/index.html",
+      "canvas2d",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidlowpoly-mountain-cablecar/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidmindi-lunar-outpost/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidmindi-miniature-railway/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidpaper-forest-crossing/index.html",
+      "canvas2d",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidpixel-river-crossing/index.html",
+      "canvas2d",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidps2-retro-garage/index.html",
+      "threejs",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ],
+    [
+      "tests/fixtures/vidriso-lighthouse-signal/index.html",
+      "canvas2d",
+      0,
+      "Static structural checks only; browser runtime, visual appearance, and motion are not tested."
+    ]
+  ],
+  "selected_files": [
+    ".github/skills/scene-production/SKILL.md",
+    ".github/skills/scene-production/references/html-canvas2d-workflow.md",
+    ".github/skills/scene-production/references/html-threejs-workflow.md",
+    ".github/skills/scene-production/scripts/validate_scene.py",
+    ".github/skills/vidbrick/SKILL.md",
+    ".github/skills/vidclay/SKILL.md",
+    ".github/skills/vidcomic/SKILL.md",
+    ".github/skills/vidlowpoly/SKILL.md",
+    ".github/skills/vidmindi/SKILL.md",
+    ".github/skills/vidpaper/SKILL.md",
+    ".github/skills/vidpixel/SKILL.md",
+    ".github/skills/vidps2/SKILL.md",
+    ".github/skills/vidriso/SKILL.md",
+    ".github/skills/vskills/SKILL.md",
+    ".gitignore",
+    "README.md",
+    "tests/fixtures/cross-style-mountain-bridge/miniature-diorama/index.html",
+    "tests/fixtures/cross-style-mountain-bridge/retro-ps2/index.html",
+    "tests/fixtures/vidbrick-construction-yard/index.html",
+    "tests/fixtures/vidclay-garden-delivery/index.html",
+    "tests/fixtures/vidcomic-city-delivery/index.html",
+    "tests/fixtures/vidlowpoly-mountain-cablecar/index.html",
+    "tests/fixtures/vidmindi-lunar-outpost/index.html",
+    "tests/fixtures/vidmindi-miniature-railway/index.html",
+    "tests/fixtures/vidpaper-forest-crossing/index.html",
+    "tests/fixtures/vidpixel-river-crossing/index.html",
+    "tests/fixtures/vidps2-retro-garage/index.html",
+    "tests/fixtures/vidriso-lighthouse-signal/index.html"
+  ],
+  "excluded_categories": [
+    ".git/",
+    "raw prompt recipes and duplicate TSA source-protocol trees",
+    "development ledgers and design documents",
+    "retired Retro Anime and archived skill",
+    "historical screenshots"
+  ],
+  "notes": [
+    "No browser run or Copilot CLI discovery was performed in this environment.",
+    "Validator is static-only.",
+    "The broad parent skill and two renderer workflows are retained.",
+    "License selection remains a publication decision."
+  ]
+}

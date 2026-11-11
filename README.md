@@ -1,129 +1,51 @@
 # TSA VSkills
 
-TSA VSkills organizes video-production guidance into a parent skill, operation capabilities, and visual-style skills. These project skills provide instructions and selection guidance; their presence does not itself provide a renderer or video-generation engine.
+TSA VSkills is a **general browser-based visual-production skill system** for AI coding agents. The parent `vskills` skill is the entry point. It distinguishes **production mode**, **operation capability**, and optional **visual style**. The nine styles are presentation add-ons, not the whole purpose of TSA VSkills.
 
-## Current maturity
+## Main capability
 
-Three project skills are installed under `.github/skills/`:
+- `vskills` — choose a mode and appropriate capability, preserve the user’s subject and canonical sources, and apply an optional visual style.
+- `scene-production` — produce user-defined standalone HTML scenes with Three.js or Canvas 2D. It includes two renderer workflow references and a Python standard-library structural validator.
+- Modes described by the parent: standalone animation, modular film, and reusable character asset. **Only scene-production is presently packaged as an operational child skill**; character creation, source-video breakdown, modular film assembly and video export are *not* implemented as separate automatic capabilities in this release.
 
-- **`vskills`** — parent/orchestration guidance for selecting production modes and composing an operation capability with an optional visual style.
-- **`vidmindi`** — Miniature Diorama visual-style guidance; it affects presentation without replacing the user's scene.
-- **`scene-production`** — instruction capability for implementing and validating user-defined browser scenes, including HTML/Three.js workflows.
+## Optional visual styles
 
-From the repository root, `copilot skill list` was verified to list all three project skills in the observed GitHub Copilot CLI **1.0.108** environment. This is an observed environment, not a minimum-version requirement. Discovery does not prove automatic parent routing or scene execution.
+| Skill | Style | Renderer approach |
+| --- | --- | --- |
+| `vidmindi` | Miniature Diorama | Three.js |
+| `vidps2` | Retro PS2 | Three.js |
+| `vidpixel` | Pixel Art | Canvas 2D |
+| `vidcomic` | Comic Book | Canvas 2D |
+| `vidbrick` | Toy Brick | Three.js |
+| `vidclay` | Claymation | Three.js |
+| `vidpaper` | Paper Cutout | Canvas 2D |
+| `vidlowpoly` | Low-Poly 3D | Three.js |
+| `vidriso` | Risograph | Canvas 2D |
 
-Parent composition was tested manually with a user-defined delivery-truck scene. The parent selected `scene-production` and `vidmindi` while preserving the requested truck, bridge, and mountain village. This does not demonstrate a universal automatic router.
+Retro Anime 2D is retired and not distributed. All nine listed styles have previously been manually accepted in development fixtures; that is not a guarantee for arbitrary new scenes.
 
-## Installation — GitHub Copilot CLI
+## Installation / use
 
-### Prerequisites
+Copy `.github/skills/` into the **root of your own Copilot CLI project**, preserving its nested files. Start the CLI in that project and run `copilot skill list` to verify discovery. If the host does not automatically load a skill, explicitly ask it to read `.github/skills/vskills/SKILL.md`, `.github/skills/scene-production/SKILL.md`, and the chosen optional style’s `SKILL.md`.
 
-- GitHub Copilot CLI, to discover and invoke the skills.
-- Git, if using the manual clone-and-copy method.
-- A GitHub CLI version that supports `gh skill`, only if trying the optional remote commands. GitHub CLI and Copilot CLI are separate tools and are not interchangeable.
+Example request: “Use TSA VSkills `scene-production` with `vidlowpoly` style to implement a Three.js HTML animation of a cable car traversing a mountain valley. Keep the scene content and duration I specified. Validate syntax, static structure and actual browser display separately.”
 
-### Method A: GitHub CLI (unverified for this repository)
+Aliases such as `/vidlowpoly` are prompt conventions, **not verified native CLI slash commands**.
 
-The `gh skill` commands below are examples only. Remote preview/install has not been tested end-to-end for this repository; it requires the corresponding skill files to be available remotely. Check the current GitHub CLI help and verify discovery in the target project after any install.
-
-This repository stores skills under `.github/skills/`, a hidden directory. The examples include `--allow-hidden-dirs`; confirm that option is supported by the installed GitHub CLI:
-
-```bash
-gh skill preview amritsalahudin69/tsavskill vskills --allow-hidden-dirs
-gh skill install amritsalahudin69/tsavskill vskills --allow-hidden-dirs
-```
-
-```bash
-gh skill preview amritsalahudin69/tsavskill vidmindi --allow-hidden-dirs
-gh skill install amritsalahudin69/tsavskill vidmindi --allow-hidden-dirs
-gh skill preview amritsalahudin69/tsavskill scene-production --allow-hidden-dirs
-gh skill install amritsalahudin69/tsavskill scene-production --allow-hidden-dirs
-```
-
-GitHub CLI may select a host-specific installation location. That may differ from this repository's `.github/skills/` layout; verify the installed location and discovery in the target project.
-
-### Method B: Manual project installation
-
-The commands below illustrate copying selected skill directories into a target project's `.github/skills/`. This cross-project installation workflow has not been validated on a fresh target. Do not copy the whole repository into a skill directory or copy local TSA development records.
-
-WSL/Linux, from the directory where you want the repository clone:
+## Validation
 
 ```bash
-git clone https://github.com/amritsalahudin69/tsavskill.git
-mkdir -p /path/to/target-project/.github/skills
-cp -R tsavskill/.github/skills/vskills /path/to/target-project/.github/skills/
-cp -R tsavskill/.github/skills/vidmindi /path/to/target-project/.github/skills/
-cp -R tsavskill/.github/skills/scene-production /path/to/target-project/.github/skills/
+python3 .github/skills/scene-production/scripts/validate_scene.py --renderer threejs path/to/scene.html
+python3 .github/skills/scene-production/scripts/validate_scene.py --renderer canvas2d path/to/scene.html
+python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-In Windows PowerShell, use the equivalent commands:
+Structural checks do **not** prove browser rendering, visual quality or movement. Open the scene in a browser for acceptance. The `tests/fixtures/` folder provides optional development examples and regression references; none is a required input to create a new user-defined scene. Most Three.js fixtures use internet-hosted dependencies, so offline runtime support is not assured.
 
-```powershell
-git clone https://github.com/amritsalahudin69/tsavskill.git
-New-Item -ItemType Directory -Force -Path "C:\path\to\target-project\.github\skills"
-Copy-Item -Recurse ".\tsavskill\.github\skills\vskills" "C:\path\to\target-project\.github\skills\"
-Copy-Item -Recurse ".\tsavskill\.github\skills\vidmindi" "C:\path\to\target-project\.github\skills\"
-Copy-Item -Recurse ".\tsavskill\.github\skills\scene-production" "C:\path\to\target-project\.github\skills\"
-```
+## Release boundary
 
-### Local discovery
+This distribution contains the working skill instructions, renderer references, validator, and examples. It excludes pre-skill raw prompt collections, duplicate source protocols, experimental/retired visual attempts, working-state ledgers, and `.git` history. No scene-generation executable, MP4 exporter, native slash command registration, or universally proven character/film assembly pipeline is claimed.
 
-From this repository root, run:
+## License
 
-```bash
-copilot skill list
-```
-
-This command was verified here in Copilot CLI 1.0.108. In another target project, run it from that project's root to check discovery; cross-project installation has not been independently tested.
-
-### Prompt-based invocation
-
-Ask Copilot to use the skill in a prompt, for example:
-
-```text
-Use the vskills parent skill to explain the available capabilities.
-```
-
-```text
-Use scene-production to implement my user-defined scene as HTML/Three.js,
-and apply vidmindi's Miniature Diorama presentation guidance.
-```
-
-These are prompt-based selection examples. Native `/vidmindi` and `/scene-production` slash-command registration has not been verified; do not treat those names as standalone shell commands.
-
-### Troubleshooting
-
-- **Skill not listed:** Run `copilot skill list` from the target project root; confirm the skill is under `.github/skills/<skill-name>/SKILL.md`.
-- **Wrong installation directory:** GitHub CLI may use `.agents/skills/` at project scope. Use manual copying for the `.github/skills/` layout, or verify that the chosen location is discovered by your Copilot CLI version.
-- **Invalid metadata:** Check that `SKILL.md` has YAML frontmatter with a `name` and `description`, and that the name matches the skill directory.
-- **Running from a different project:** Project skills are scoped to the project. Start Copilot CLI from the directory containing the installed skill path.
-- **Missing project skill:** Confirm that the skill directory and `SKILL.md` are present, then run `copilot skill list` from the project root.
-- **Unsupported command:** Check the current `copilot` or `gh` CLI help; the remote `gh skill` examples above are unverified for this repository.
-
-## Production modes and visual styles
-
-The design separates production mode (output type), operation capability (work performed), and visual style (presentation):
-
-- **Standalone Animation** — one autonomous animation; duration is user-defined.
-- **Modular Film** — scenes intended for assembly; the 15-minute limit applies to the complete film, not each scene.
-- **Character Asset** — a reusable character asset.
-
-`vidmindi` supplies Miniature Diorama visual-style guidance. Other visual styles are unimplemented. A visual style does not itself provide a scene-production engine.
-
-## Current capability status
-
-**Composition model:** `vskills` guides selection of a production capability and, when requested, an optional primary visual style. For an HTML/Three.js scene, `scene-production` provides the implementation workflow; `vidmindi` may supply Miniature Diorama presentation guidance. The user's scene remains authoritative.
-
-**Parent composition:** A manual composition test selected `scene-production` and `vidmindi` for a user-defined truck/bridge/village request. This was an orchestration check, not an automatic universal routing test.
-
-**Lunar Outpost fixture:** Static and local HTTP checks previously passed. The user reported manual browser PASS for rendering, visible rover and habitat, actual 3D volume, recognizable Miniature Diorama appearance, rover movement and wheel rotation, and no critical DevTools Console errors. These are user-observed results, not agent-automated browser tests; agent browser automation and automated motion capture remain incomplete.
-
-**Miniature Railway fixture:** Static checks and a local HTTP smoke test passed. Browser runtime, visual fidelity, and rendered motion have not been verified.
-
-Both fixtures use Three.js **0.187.0** from jsDelivr and require network access to load the CDN dependency. Their results demonstrate only the checks stated above; they do not establish arbitrary-scene reliability.
-
-**Limitations:** `scene-production` is an instruction capability, not a generic scene generator. No universal automatic router, video-generation engine, or MP4 exporter is implemented. Native `/vidmindi` and `/scene-production` slash-command registration is unverified.
-
-## Licensing and attribution
-
-There is no confirmed project `LICENSE` file or selected project license. Redistribution rights and attribution for original source prompts and protocol materials remain unresolved. Do not infer permission to redistribute them from their presence in the working tree.
+No license has been selected in the provided repository snapshot. Choose a license and check rights for content before public publication. Absence of a license does not automatically authorize reuse.
