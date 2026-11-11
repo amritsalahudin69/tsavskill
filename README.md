@@ -4,9 +4,9 @@
 
 ### Build browser-based 2D & 3D scenes with AI coding agents
 
-**One production workflow · Nine optional visual styles · User-defined stories and characters**
+**Main TSA production skill · Image-to-3D character workflow · Canonical character integration · Nine optional visual styles**
 
-[Getting started](#-quick-start--install-di-github-AI Agent-cli) · [Skill catalog](#-skill-yang-tersedia) · [CLI examples](#-contoh-penggunaan-di-AI Agent-cli) · [Combine skills](#-kombinasi-skill) · [Troubleshooting](#-troubleshooting)
+[Install](#-quick-start--install-di-github-AI Agent-cli) · [Core workflows](#-workflow-utama-tsa-vskills) · [Skill catalog](#-skill-yang-tersedia) · [Visual styles](#-contoh-penggunaan-di-AI Agent-cli) · [Combine](#-kombinasi-skill) · [Troubleshooting](#-troubleshooting)
 
 </div>
 
@@ -18,12 +18,13 @@
 
 - **Scene milik pengguna, bukan template tetap.** Jelaskan objek, lingkungan, aksi, kamera, durasi, dan hasil yang kamu inginkan.
 - **True 3D or 2D.** Gunakan Three.js untuk geometri volumetrik 3D; Canvas 2D ketika memang sesuai dengan scene.
-- **Canonical-source aware.** Ketika HTML karakter/model asli diberikan, agent diminta membaca implementasi aktual dan menjaga identitas serta konstruksinya; bukan membuat karakter yang sekadar mirip.
+- **Image-to-3D character workflow.** Pengguna dapat memberikan PNG/JPG sebagai referensi visual untuk membuat karakter Three.js volumetrik, dengan wajah, mata, mulut, proporsi dan pivot yang dapat diperiksa. Ini workflow yang diarahkan `vskills`, **bukan child skill mandiri yang sudah divalidasi end-to-end**.
+- **Canonical-source integration.** Ketika HTML karakter/model asli diberikan, agent harus membaca implementasi aktual dan mempertahankan geometri, hierarchy, material, wajah dan pivot—bukan membuat karakter yang sekadar mirip.
 - **Scene-first workflow.** Produksi scene dengan satu kemampuan operasional dan, jika dibutuhkan, satu gaya visual utama.
 - **Evidence-based validation.** Pemeriksaan source dan Python bukan pengganti browser, animasi, dan visual acceptance.
 - **Examples included.** Fixture HTML di `tests/fixtures/` dapat dijadikan contoh dan pemeriksaan regresi.
 
-**Batas kemampuan rilis ini:** `scene-production` adalah child skill operasional yang sudah dikemas. `vskills` juga menjelaskan mode *standalone animation*, *modular film*, dan *character asset*, serta rute konseptual untuk character creation, video breakdown, integrasi canonical character, dan scene assembly. Itu **belum berarti** semua operasi tersebut tersedia sebagai child skill otomatis terpisah. Tidak ada klaim bahwa paket ini otomatis menghasilkan MP4 atau menjamin kualitas visual setiap scene.
+**Cakupan dan batas rilis:** `vskills` adalah pengarah utama yang mencakup permintaan karakter, integrasi sumber karakter, dan produksi scene; `scene-production` adalah child skill implementasi HTML/Three.js/Canvas 2D yang tersedia. Pembuatan karakter 3D dari gambar dan integrasinya dapat diminta melalui prompt di bawah, tetapi **belum tersedia sebagai child skill khusus atau workflow end-to-end yang terbukti pada paket publik**. `vskills` juga menguraikan jalur modular film, video breakdown, dan scene assembly pada tingkat perencanaan. Tidak ada jaminan kualitas otomatis, MP4 export, atau visual PASS tanpa pengujian.
 
 ## 🔗 Official repository
 
@@ -127,7 +128,7 @@ Harus terdeteksi **11 skill project**: `vskills`, `scene-production`, dan sembil
 
 | Skill | Peran | Contoh tugas |
 |---|---|---|
-| **`vskills`** | **Induk / orchestrator**: memahami mode produksi, memilih operasi, menjaga scene dan source canonical, mengarahkan opsi style | Pilih workflow untuk video HTML dari karakter yang sudah ada |
+| **`vskills`** | **Skill utama TSA**: routing kebutuhan karakter-dari-gambar, source canonical, scene, dan opsi style | Arahkan gambar → HTML karakter → scene animasi |
 | **`scene-production`** | Membuat scene HTML yang berjalan dengan Three.js atau Canvas 2D; memandu implementasi dan validasi | Animasi truk RC melewati jalan berbatu |
 
 ### Nine optional visual styles
@@ -146,10 +147,177 @@ Harus terdeteksi **11 skill project**: `vskills`, `scene-production`, dan sembil
 
 **Retro Anime 2D tidak tersedia:** implementasi eksperimennya sudah dipensiunkan dan bukan bagian katalog aktif.
 
+## 🎬 Workflow utama TSA VSkills
+
+**Mulai dari tujuan pengguna, bukan dari pilihan visual style.** TSA VSkills dapat diarahkan untuk membuat karakter 3D, mengintegrasikan karakter yang sudah ada ke scene, dan menghasilkan animasi HTML. Sembilan `vid*` hanya opsi gaya tambahan. Karena paket ini belum memiliki `character-creation/SKILL.md`, contoh image-to-3D berikut adalah **prompt untuk `vskills` + `scene-production`**, bukan slash command atau fitur terpisah yang telah terbukti otomatis.
+
+### A. Gambar PNG/JPG → karakter 3D Three.js
+
+**Input:** simpan gambar referensi di proyek, misalnya `assets/characters/hero.png`. Gambar menetapkan identitas visual; satu gambar saja tidak membuktikan desain sisi belakang atau topologi tersembunyi.
+
+**Prompt di dalam AI Agent CLI** (ubah path gambar sesuai proyek):
+
+```text
+Use the /vskills skill as the main TSA production guide.
+Use /scene-production for Three.js implementation.
+
+OBJECTIVE
+Build a reusable, genuinely volumetric 3D character from:
+assets/characters/hero.png
+
+SOURCE OF TRUTH
+Inspect the actual reference image. Preserve the observable silhouette,
+head/body proportions, eye and mouth placement, facial features, colors,
+clothing and distinctive details. Separate observed details from guesses
+about unseen surfaces.
+
+IMPLEMENTATION
+Create actual Three.js meshes and materials, not a flat PNG billboard.
+Organize named geometry groups and meaningful independent pivots for head,
+arms and legs. Make eyes and mouth visible. Do not force a box-shaped body
+when the image shows a different form.
+
+OUTPUT
+Create characters/hero.html as a reusable standalone inspection scene.
+Show front, side and three-quarter views; keep the character source separable
+from preview camera/stage and unrelated game code.
+
+VALIDATION
+Check dependencies, syntax, browser rendering when available, visible
+3D volume, face, pivots and proportions. Report NOT_TESTED when a visual
+or runtime check was not actually performed. Do not claim a perfect match.
+Preserve unrelated project files.
+```
+
+**Output yang diminta:** `characters/hero.html` berisi model Three.js nyata dengan preview. **Acceptance wajib manual:** inspeksi depan/samping/3⁄4; pastikan mata dan mulut ada, tubuh tidak gepeng, anggota tubuh terhubung, pivot benar, tidak ada layar kosong. Validator struktural tidak cukup untuk membuktikan kemiripan gambar. Bila model tidak memadai, koreksi geometri dan hierarkinya sebelum memakai karakter dalam film/game.
+
+### B. HTML karakter canonical → scene animasi baru
+
+**Input:** HTML karakter yang benar-benar sudah diterima, misalnya `characters/hero.html`. File HTML ini—bukan sekadar screenshot—menjadi **canonical implementation source** untuk scene berikutnya.
+
+```text
+Use /vskills as the main production guide and /scene-production for Three.js.
+
+CANONICAL CHARACTER SOURCE
+characters/hero.html
+
+Read the actual HTML/JavaScript source first. Identify and reuse the real
+geometry, hierarchy, pivots, materials, colors, face details, proportions,
+and existing animation capabilities. Do NOT recreate a lookalike from
+an image, description, or memory. Keep the original source unchanged.
+
+SCENE
+Build scenes/hero-garden.html: the same character walks through a garden,
+stops by a bench, waves and walks away. Duration 15 seconds, 16:9,
+tracking camera, no HUD. Integrate the source character into one coherent
+Three.js scene and timeline; animate existing pivots where possible.
+
+VALIDATION
+Inspect source reuse, geometry, motion, ground contact, browser runtime
+and visual fidelity separately. If the source lacks a required articulation,
+report the exact limitation instead of inventing a rig or replacing it.
+```
+
+**Perbedaan yang wajib dipahami:** dalam workflow A gambar menentukan **apa yang dibangun**; dalam workflow B HTML yang sudah ada menentukan **kode dan konstruksi karakter yang harus dipertahankan**. Mengganti model lama dengan model 'mirip' bukan integrasi canonical.
+
+### C. Gambar → karakter HTML → scene dengan style opsional
+
+Jalankan **A** dahulu dan terima hasil karakter. Baru jalankan **B**, dengan gaya lingkungan opsional. Contoh untuk karakter yang *sudah* lolos inspeksi:
+
+```text
+Use /vskills and /scene-production. Use /vidmindi as the single primary
+visual style for the NEW environment.
+
+Read characters/hero.html as canonical Three.js character source.
+Reuse its real geometry, material identity, face and limb pivots; do not
+replace or restyle the character without permission.
+
+Build scenes/hero-miniature-village.html: the accepted character crosses
+a tiny wooden bridge in a miniature village, with a slow tracking camera,
+12-second animation, no UI. Keep source character unchanged.
+Report actual syntax, browser, and visual checks separately.
+```
+
+**Kombinasi di atas adalah** `vskills` (arahan) + `scene-production` (implementasi) + **maksimal satu gaya visual utama**. `vidmindi` memandu gaya lingkungan, bukan izin mengubah identitas canonical karakter. Tidak ada klaim bahwa semua gaya 2D kompatibel langsung dengan karakter Three.js volumetrik.
+
+### D. Memeriksa hasil di browser
+
+Jalankan dari root proyek:
+
+```bash
+python3 -m http.server 8765 --bind 127.0.0.1
+```
+
+Buka `http://localhost:8765/characters/hero.html` untuk inspeksi karakter atau `http://localhost:8765/scenes/hero-garden.html` untuk scene. Gunakan Console browser untuk memastikan modul dan aset termuat. Jika output merupakan scene animasi Three.js yang memenuhi kontrak validator, periksa pula:
+
+```bash
+python3 .github/skills/scene-production/scripts/validate_scene.py \
+  --renderer threejs scenes/hero-garden.html
+```
+
+**Status kejujuran:** prompt di bagian ini menjelaskan cara **meminta** workflow, bukan bukti bahwa setiap agent dapat merekonstruksi karakter 3D berkualitas dari setiap gambar. Hasilnya tetap membutuhkan inspeksi dan revisi visual.
+
+---
+
 ## 💬 Contoh penggunaan di AI Agent CLI
 
 Setelah skill terdeteksi, ketik **prompt berikut di sesi AI Agent CLI**. Bentuk `Use the /skill-name skill ...` merujuk skill bernama itu; ini **bukan** perintah shell dan tidak menjamin setiap versi host menyediakan slash command mandiri untuk tiap skill.
 
+### 3D compiler
+
+| Kemampuan utama             | Panduan baru                                                         |
+| --------------------------- | -------------------------------------------------------------------- |
+| Image → 3D Character        | Cara menggunakan PNG/JPG untuk membuat model Three.js volumetrik     |
+| 3D Character → HTML         | Membuat karakter mandiri dengan mata, mulut, tubuh 3D, dan pivot     |
+| Canonical Character → Scene | Menggunakan implementasi HTML karakter asli tanpa membangun ulang    |
+| Character + Visual Style    | Menggabungkan karakter yang sudah diterima dengan gaya opsional      |
+| Validation                  | Cara menjalankan HTML, memeriksa wajah, geometri, pivot, dan animasi |
+
+Setiap workflow sudah memiliki contoh prompt Copilot CLI siap salin.
+
+### 1. Membuat karakter dari gambar
+```text
+Use /vskills and /scene-production.
+
+Build a reusable volumetric Three.js character
+from assets/characters/hero.png.
+
+Preserve the actual facial features, eyes, mouth,
+body proportions, costume, colors and details.
+
+Create characters/hero.html with front, side
+and three-quarter inspection views.
+```
+
+### 2. Menggunakan karakter dalam scene
+```text
+Use /vskills and /scene-production.
+
+Read characters/hero.html as the canonical source.
+Reuse its real geometry, hierarchy, materials
+and articulation. Do not create a lookalike.
+
+Build a 15-second Three.js garden scene with
+the character walking, stopping and waving.
+```
+
+### 3. Menambahkan gaya visual
+```text
+Use /vskills, /scene-production and /vidmindi.
+
+Preserve the canonical character from
+characters/hero.html.
+
+Build a miniature village environment and
+animate the same character crossing a bridge.
+```
+
+###
+```text
+
+```
+
+----------------------------------------------------------------------------------------------------------------
 ### 1. Gunakan skill utama tanpa menentukan gaya
 
 ```text
@@ -341,7 +509,7 @@ Fixture bukan input wajib. Saat memasang skills ke proyek lain, cukup salin `.gi
 - **Main skill:** `vskills` — instruction-based production guidance and capability selection.
 - **Operational child:** `scene-production` — HTML scene implementation using Three.js / Canvas 2D.
 - **Visual children:** nine optional styles, accepted on their development fixtures. New scenes still require validation.
-- **Not packaged as automatic standalone capabilities:** video source breakdown, full character-generation pipeline, multi-scene film assembly, MP4 encoding/export, or automated visual approval.
+- **Not packaged as separately verified standalone capabilities:** automatic image-to-3D character generation, video source breakdown, full multi-scene film assembly, MP4 encoding/export, or automated visual approval. The character workflows above are guided production requests and must be individually validated.
 - **License:** no license was present in the supplied snapshot. Repository ownership and reuse permissions should be clarified before an open-source release.
 
 ---
