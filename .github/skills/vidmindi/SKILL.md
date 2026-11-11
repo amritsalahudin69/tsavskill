@@ -11,7 +11,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.miniature-diorama`
-- Copilot skill name and directory: `vidmindi`
+- AI agent skill name and directory: `vidmindi`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - Descriptive name: Miniature Diorama
@@ -63,7 +63,7 @@ The user's scene requirements take precedence over style convenience. When canon
 
 Report evidence and limits separately:
 
-- **Discovery:** Copilot CLI lists `vidmindi` as an available project skill.
+- **Discovery:** AI agent CLI lists `vidmindi` as an available project skill.
 - **Metadata:** the host accepts `name: vidmindi` and the skill description.
 - **Instruction loading:** an explicit prompt invokes the skill and returns the diagnostic marker.
 - **Style identification:** the response applies Miniature Diorama guidance without conflating it with a production capability.

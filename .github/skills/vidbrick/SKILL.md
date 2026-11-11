@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.toy-brick`
-- Copilot project skill name and directory: `vidbrick`
+- AI agent project skill name and directory: `vidbrick`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidbrick` (not a verified native slash command)

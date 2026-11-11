@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.retro-ps2`
-- Copilot skill name and directory: `vidps2`
+- AI agent skill name and directory: `vidps2`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - Descriptive name: Retro PS2

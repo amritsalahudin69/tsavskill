@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.claymation`
-- Copilot project skill name and directory: `vidclay`
+- AI agent project skill name and directory: `vidclay`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidclay` (not a verified native slash command)

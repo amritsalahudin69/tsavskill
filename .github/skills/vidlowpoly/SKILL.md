@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.low-poly-3d`
-- Copilot project skill name and directory: `vidlowpoly`
+- AI agent project skill name and directory: `vidlowpoly`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidlowpoly` (not a verified native slash command)

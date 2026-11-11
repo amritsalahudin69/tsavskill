@@ -273,7 +273,7 @@ Setelah skill terdeteksi, ketik **prompt berikut di sesi AI Agent CLI**. Bentuk 
 | Character + Visual Style    | Menggabungkan karakter yang sudah diterima dengan gaya opsional      |
 | Validation                  | Cara menjalankan HTML, memeriksa wajah, geometri, pivot, dan animasi |
 
-Setiap workflow sudah memiliki contoh prompt Copilot CLI siap salin.
+Setiap workflow sudah memiliki contoh prompt AI agent CLI siap salin.
 
 ### 1. Membuat karakter dari gambar
 ```text

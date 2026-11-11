@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.paper-cutout`
-- Copilot project skill name and directory: `vidpaper`
+- AI agent project skill name and directory: `vidpaper`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidpaper` (not a verified native slash command)

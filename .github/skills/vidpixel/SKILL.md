@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.pixel-art`
-- Copilot project skill name and directory: `vidpixel`
+- AI agent project skill name and directory: `vidpixel`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidpixel` (not a verified native slash command)

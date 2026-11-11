@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.risograph`
-- Copilot project skill name and directory: `vidriso`
+- AI agent project skill name and directory: `vidriso`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidriso` (not a verified native slash command)

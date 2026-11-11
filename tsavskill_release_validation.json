@@ -126,7 +126,7 @@
     "historical screenshots"
   ],
   "notes": [
-    "No browser run or Copilot CLI discovery was performed in this environment.",
+    "No browser run or AI agent CLI discovery was performed in this environment.",
     "Validator is static-only.",
     "The broad parent skill and two renderer workflows are retained.",
     "License selection remains a publication decision."

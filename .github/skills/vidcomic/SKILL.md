@@ -10,7 +10,7 @@ description: >
 ## Identity and status
 
 - Stable VSkills skill ID: `style.comic-book`
-- Copilot project skill name and directory: `vidcomic`
+- AI agent project skill name and directory: `vidcomic`
 - Logical parent: `vskills`
 - Category: `visual_style`
 - User-facing prompt alias: `/vidcomic` (not a verified native slash command)
